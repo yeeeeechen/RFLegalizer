@@ -1,0 +1,14 @@
+boost_1_82_0
+boost_1_72_0
+outputs/
+log/
+*.tar*
+.vscode/*
+*.o*
+*.out
+.DS_Store
+fprun
+answers/
+utils/verify
+pngs/
+pythonenv/
