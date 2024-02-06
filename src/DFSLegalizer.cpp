@@ -1326,8 +1326,8 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
             }
 
             Rectangle newArea(BL.x, BL.y, BL.x+width, BL.y+height);
-            Polygon90Set newFromBlock = fromBlock - newArea;
-            Polygon90Set newToBlock = toBlock + newArea;
+            Polygon90Set newFromBlock = fromBlock + newArea;
+            Polygon90Set newToBlock = toBlock - newArea;
 
             LegalInfo newFromBlockInfo = getLegalInfo(newFromBlock);
             LegalInfo newToBlockInfo = getLegalInfo(newToBlock);

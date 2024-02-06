@@ -1,8 +1,22 @@
-set -v
 make
-./test_legal inputs/legaltest03.txt 0 1 | tee log/legaltest03.log
-python3 utils/draw_tile_layout.py outputs/legal_0_1.txt outputs/testlegal_solution.png
-python3 utils/draw_tile_layout.py outputs/phase2.txt outputs/testlegal_init.png
 
-eog outputs/testlegal_solution.png &
-eog outputs/testlegal_init.png &
+if [ "$#" -ne 3 ]; then
+    strategy=0
+    mode=0
+else
+    strategy=$2
+    mode=$3
+fi
+
+echo "Command: ./legal inputs/$1.txt $strategy $mode | tee log/$1.log"
+./legal inputs/$1.txt $strategy $mode | tee log/$1.log
+
+echo 
+echo "Drawing output:"
+echo outputs/$1_solution.png
+echo outputs/$1_init.png
+python3 utils/draw_tile_layout.py outputs/legal.txt outputs/$1_solution.png
+python3 utils/draw_tile_layout.py outputs/phase2.txt outputs/$1_init.png
+
+eog outputs/$1_solution.png &
+eog outputs/$1_init.png &

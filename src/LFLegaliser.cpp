@@ -33,6 +33,7 @@ LFLegaliser::LFLegaliser(const LFLegaliser &other){
     this->mCanvasWidth = other.mCanvasWidth;
     this->mCanvasHeight = other.mCanvasHeight;
     this->overlap3 = other.overlap3;
+    this->connectionList = other.connectionList;
 
     std::vector <Tile *> allOldTiles;
     other.collectAllTiles(allOldTiles);
@@ -273,6 +274,7 @@ void LFLegaliser::initFromGlobalFile(std::string path){
 
     // connections
     connectionList.resize(connectionNum);
+    std::getline(fin, s); // only newline
     for (int i = 0; i < connectionNum; i++){
         std::string input;
         std::getline(fin, input);
@@ -2304,9 +2306,9 @@ Tile* LFLegaliser::splitTile(Tile* originalTile, Rectangle newRect){
 
 double LFLegaliser::calculateHPWL(){
     double HPWL = 0.0;
-    double xmax = -DBL_MAX, ymax = -DBL_MAX;
-    double xmin = DBL_MAX, ymin = DBL_MAX;
     for(Connection& connection : connectionList){
+        double xmax = -DBL_MAX, ymax = -DBL_MAX;
+        double xmin = DBL_MAX, ymin = DBL_MAX;
         for (std::string moduleName: connection.modules){
             bool found = false;
             double pinx, piny;
@@ -2363,6 +2365,7 @@ double LFLegaliser::calculateHPWL(){
             double distance = (xmax - xmin) + (ymax - ymin);
             double connectionScore = distance * ((double)connection.value);
 
+            // printf("net: X:(%f,%f) Y:(%f,%f)\n", xmin,xmax, ymin,ymax);
             HPWL += connectionScore;
         }
     }
@@ -2371,18 +2374,52 @@ double LFLegaliser::calculateHPWL(){
 }
 
 
-void LFLegaliser::outputFinalAnswer(std::string outputFileName){
-    std::cout << "output Final Answer..." << outputFileName << std::endl;
+void LFLegaliser::outputFloorplan(std::string outputFileName){
+    std::cout << "output Floorplan..." << outputFileName << std::endl;
 
     std::ofstream ofs(outputFileName);
-    ofs << "HPWL " << std::fixed << std::setprecision(1) << calculateHPWL() << std::endl;
-    ofs << "SOFTMODULE " << softTesserae.size() << std::endl;
-    for(Tessera *softTess : softTesserae){
-        // assert(!softTess->TileArr.empty());
-        // assert(softTess->OverlapArr.empty());
-        softTess->printCorners(ofs);
+    ofs << "BLOCK " << fixedTesserae.size() + softTesserae.size() <<  std::endl;
+    ofs << this->mCanvasWidth << " " << this->mCanvasHeight << std::endl;
+
+    if(fixedTesserae.size() == 0 && softTesserae.size() == 0){
+        //there is no blocks
+        ofs.close();
+        return;
     }
-    ofs.close();
+
+    for(Tessera *tess : softTesserae){
+        ofs << tess->getName() << " " << tess->getLegalArea() << " ";
+        ofs << tess->getBBLowerLeft().x << " " << tess->getBBLowerLeft().y << " ";
+        ofs << tess->getBBWidth() << " " << tess->getBBHeight() << " " << "SOFT_BLOCK" << std::endl;
+        ofs << tess->TileArr.size() << " " << tess->OverlapArr.size() << std::endl;
+        for(Tile *t : tess->TileArr){
+            ofs << t->getLowerLeft().x << " " << t->getLowerLeft().y << " " << t->getWidth() << " " << t->getHeight() << " BLOCK" << std::endl;
+        }
+        for(Tile *t : tess->OverlapArr){
+            ofs << t->getLowerLeft().x << " " << t->getLowerLeft().y << " " << t->getWidth() << " " << t->getHeight() << " OVERLAP" <<std::endl;
+        }
+    }
+
+    for(Tessera *tess : fixedTesserae){
+        ofs << tess->getName() << " " << tess->getLegalArea() << " ";
+        ofs << tess->getBBLowerLeft().x << " " << tess->getBBLowerLeft().y << " ";
+        ofs << tess->getBBWidth() << " " << tess->getBBHeight() << " " << "HARD_BLOCK" << std::endl;
+        ofs << tess->TileArr.size() << " " << tess->OverlapArr.size() << std::endl;
+        for(Tile *t : tess->TileArr){
+            ofs << t->getLowerLeft().x << " " << t->getLowerLeft().y << " " << t->getWidth() << " " << t->getHeight() << " BLOCK" << std::endl;
+        }
+        for(Tile *t : tess->OverlapArr){
+            ofs << t->getLowerLeft().x << " " << t->getLowerLeft().y << " " << t->getWidth() << " " << t->getHeight() << " OVERLAP" <<std::endl;
+        }
+    }
+
+    ofs << "CONNECTION " << connectionList.size() << std::endl;
+    for (Connection& connection: connectionList){
+        for (std::string moduleName: connection.modules){
+            ofs << moduleName << ' ';
+        }
+        ofs << connection.value << std::endl;
+    }
     
 }
 

@@ -3,7 +3,8 @@ FLAGS = -std=c++17
 CXXFLAGS += -Wall -Wno-unused-function -Wno-write-strings -Wno-sign-compare
 
 SRCPATH = ./src
-INCLUDES += -I./boost_1_82_0
+BOOSTPATH =    	# your boost path here
+INCLUDES += -I$(BOOSTPATH)
 
 all: legal
 debug: legal_debug

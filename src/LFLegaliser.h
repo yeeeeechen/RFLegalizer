@@ -109,7 +109,7 @@ public:
     void collectAllTiles(std::vector<Tile *> &allTiles) const;
 
     double calculateHPWL();
-    void outputFinalAnswer(std::string outputFileName);
+    void outputFloorplan(std::string outputFileName);
 };
 
 bool checkVectorInclude(std::vector<Cord> &vec, Cord c);
