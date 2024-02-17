@@ -35,6 +35,13 @@ enum class DIRECTION : unsigned char { TOP, RIGHT, DOWN, LEFT, NONE };
 
 enum class RESULT : unsigned char { SUCCESS, OVERLAP_NOT_RESOLVED, CONSTRAINT_FAIL };
 
+enum DFSL_PRINTLEVEL : int {
+    DFSL_ERROR    = 0,
+    DFSL_WARNING  = 1,
+    DFSL_STANDARD = 2,
+    DFSL_VERBOSE  = 3
+}; 
+
 class DFSLegalizer{
 private:
     std::vector<DFSLNode> mAllNodes;
@@ -50,7 +57,7 @@ private:
     int mSoftTessNum;
     int mOverlapNum;
     int mBlankNum;
-    int mOutputLevel;
+    DFSL_PRINTLEVEL mOutputLevel;
     
     bool migrateOverlap(int overlapIndex);
     void dfs(DFSLEdge& edge, double currentCost);

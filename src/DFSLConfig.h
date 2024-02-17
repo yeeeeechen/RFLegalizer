@@ -27,6 +27,8 @@ struct Config {
     double WWFlatCost;  
 
     bool exactAreaMigration;
+    bool migrationAreaLimit;
+    double maxMigrationAreaInSingleIteration;
 };
 
 #endif

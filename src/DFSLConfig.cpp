@@ -26,8 +26,11 @@ Config::Config():
     // whitespace -> whitespace flow costs
     WWFlatCost(1000000.0),
 
+    // misc configs
     // turn this on if integer division causes modules to not have required area
-    exactAreaMigration(false)
+    exactAreaMigration(false),
+    migrationAreaLimit(false),
+    maxMigrationAreaInSingleIteration(0.01)
     { ; }
 
 void Config::resetDefault(){

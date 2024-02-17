@@ -7,18 +7,36 @@
 #include <cstdint>
 #include <cstdlib>
 #include <numeric>
+#include <sstream>
 #include <cstdarg>
 
 namespace DFSL {
 
 DFSLNode::DFSLNode(): area(0), index(0) {}
 
-DFSLegalizer::DFSLegalizer(): mOutputLevel(0)
+DFSLegalizer::DFSLegalizer(): mOutputLevel(DFSL_PRINTLEVEL::DFSL_STANDARD)
 {
 }
 
 DFSLegalizer::~DFSLegalizer()
 {
+}
+
+
+void DFSLegalizer::DFSLPrint(int level, const char* fmt, ...){
+    va_list args;
+    va_start( args, fmt );
+    if (mOutputLevel >= level){
+        if ( level == DFSL_ERROR )
+            printf( "[DFSL] ERROR  : " );
+        else if ( level == DFSL_WARNING )
+            printf( "[DFSL] WARNING: " );
+        else if (level == DFSL_STANDARD){
+            printf( "[DFSL] INFO   : ");
+        }
+        vprintf( fmt, args );
+        va_end( args );
+    }
 }
 
 void DFSLegalizer::initDFSLegalizer(LFLegaliser* floorplan){
@@ -392,7 +410,7 @@ RESULT DFSLegalizer::legalize(int mode){
             }
 
             if (resolvableOverlaps == 0){
-                std::cout << "[DFSL] ERROR: Overlaps unable to resolve\n";
+                DFSLPrint(0, "Overlaps unable to resolve\n");
                 result = RESULT::OVERLAP_NOT_RESOLVED;
                 return result;
             }
@@ -486,25 +504,25 @@ RESULT DFSLegalizer::legalize(int mode){
         DFSLNode& node = mAllNodes[i];
         LegalInfo legal = getLegalInfo(node.tileList);
         if (legal.util < UTIL_RULE){
-            std::cout << "[DFSL] Warning: util for " << node.nodeName << " (" << legal.util << " < " << UTIL_RULE << ")\n";
+            DFSLPrint(1, "util for %s fail (%4.3f < %4.3f)\n", node.nodeName.c_str(), legal.util, UTIL_RULE);
             result = RESULT::CONSTRAINT_FAIL;
         }
 
         if (legal.aspectRatio > ASPECT_RATIO_RULE && node.nodeType == DFSLTessType::SOFT){
-            std::cout << "[DFSL] Warning: aspect ratio for " << node.nodeName << " fail (" << legal.aspectRatio << " > " << ASPECT_RATIO_RULE << ")\n";
+            DFSLPrint(1, "aspect ratio for %s fail (%3.2f > %3.2f)\n", node.nodeName.c_str(), legal.aspectRatio, ASPECT_RATIO_RULE);
             result = RESULT::CONSTRAINT_FAIL;
         }
         else if (legal.aspectRatio < 1.0 / ASPECT_RATIO_RULE && node.nodeType == DFSLTessType::SOFT){
-            std::cout << "[DFSL] Warning: aspect ratio for " << node.nodeName << " fail (" << legal.aspectRatio << " < " << 1.0 / ASPECT_RATIO_RULE << ")\n";
+            DFSLPrint(1, "aspect ratio for %s fail (%3.2f < %3.2f)\n", node.nodeName.c_str(), legal.aspectRatio, ASPECT_RATIO_RULE);
             result = RESULT::CONSTRAINT_FAIL;
         }
 
         if (legal.actualArea < requiredArea && node.nodeType == DFSLTessType::SOFT){
-            std::cout << "[DFSL] Warning: Required area for soft block " << node.nodeName << " fail (" << legal.actualArea << " < " << requiredArea << ")\n";
+            DFSLPrint(1, "Required area for soft block %s fail (%d < %d)\n", node.nodeName.c_str(), legal.actualArea, requiredArea);
             result = RESULT::CONSTRAINT_FAIL;            
         } 
         else if (legal.actualArea != requiredArea && node.nodeType == DFSLTessType::FIXED){
-            std::cout << "[DFSL] Warning: Required area for fixed block " << node.nodeName << " fail (" << legal.actualArea << " != " << requiredArea << ")\n";
+            DFSLPrint(1, "Required area for fixed block %s fail (%d != %d)\n", node.nodeName.c_str(), legal.actualArea, requiredArea);
             result = RESULT::CONSTRAINT_FAIL;
         }
     }
@@ -550,7 +568,7 @@ Rectangle DFSLegalizer::getRectFromEdge(MigrationEdge& edge, bool findRemainder,
     else {
         DFSLNode& fromNode = mAllNodes[edge.fromIndex];
         DFSLNode& toNode = mAllNodes[edge.toIndex];
-        std::cout << "[DFSL] WARNING: Edge ( " << fromNode.nodeName << " -> " << toNode.nodeName << " ) has no DIRECTION\n";
+        DFSLPrint(1, "Edge (%s -> %s) has no DIRECTION\n", fromNode.nodeName.c_str(), toNode.nodeName.c_str());
     }
     
     int remainingArea = mResolvableArea - (xh - xl) * (yh - yl);
@@ -582,7 +600,7 @@ Rectangle DFSLegalizer::getRectFromEdge(MigrationEdge& edge, bool findRemainder,
         else {
             DFSLNode& fromNode = mAllNodes[edge.fromIndex];
             DFSLNode& toNode = mAllNodes[edge.toIndex];
-            std::cout << "[DFSL] WARNING: Edge ( " << fromNode.nodeName << " -> " << toNode.nodeName << " ) has no DIRECTION\n";
+            DFSLPrint(1, "Edge (%s -> %s) has no DIRECTION\n", fromNode.nodeName.c_str(), toNode.nodeName.c_str());
         }
         remainderRect = Rectangle(rxl, ryl, rxh, ryh);
     }
@@ -594,7 +612,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
     DFSLNode& fromNode = mAllNodes[edge.fromIndex];
     DFSLNode& toNode = mAllNodes[edge.toIndex];
     if (!(fromNode.nodeType == DFSLTessType::OVERLAP && toNode.nodeType == DFSLTessType::SOFT)){
-        std::cout << "[DFSL] Error: splitOverlap can only be used on overlap->soft edge.\n";
+        DFSLPrint(0, "splitOverlap can only be used on overlap->soft edge.\n");
         return false;
     }
     
@@ -605,7 +623,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
         }
     }
     if (fullEdge == NULL){
-        std::cout << "[DFSL] Error: OB edge not found.\n";
+        DFSLPrint(0, "OB edge not found.\n");
         return false;
     }
 
@@ -627,7 +645,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
             sideOccupied[3] = true;
             break;
         default:
-            std::cout << "[DFSL] Warning: OB edge segment has no direction\n";
+            DFSLPrint(1, "OB edge segment has no direction\n");
             break;
         }
     }
@@ -746,7 +764,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
                     break;
                 }
                 if (newTile == NULL){
-                    std::cout << "[DFSL] Error: Split tile failed 1\n";
+                    DFSLPrint(0, "Split tile failed.\n");
                     return false;
                 }
                 else {
@@ -806,7 +824,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
                 // split tiles
                 Tile* remainderTile = mLF->splitTile(overlapTile, remainderRectangle);
                 if (remainderTile == NULL){
-                    std::cout << "[DFSL] Error: Split tile failed 2\n";
+                    DFSLPrint(0, "Split tile failed (in exact area migration).\n");
                     return false;
                 }
                 else {
@@ -827,7 +845,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
     DFSLNode& toNode = mAllNodes[edge.toIndex];
 
     if (!(fromNode.nodeType == DFSLTessType::SOFT && toNode.nodeType == DFSLTessType::SOFT)){
-        std::cout << "[DFSL] Error: splitSoftBlock can only be used on soft->soft edge.\n";
+        DFSLPrint(0, "splitSoftBlock can only be used on soft->soft edge.\n");
         return false;
     }
 
@@ -850,7 +868,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
                 Tile* newTile = mLF->splitTile(tile, tileRect);
 
                 if (newTile == NULL){
-                    std::cout << "[DFSL] Error: BB Split tile failed\n";
+                    DFSLPrint(0, "BB Split tile failed.\n");
                     return false;
                 }
                 else {
@@ -859,7 +877,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
                     
                     bool removed = removeFromVector(newTile, toTess->TileArr);
                     if (!removed){
-                        std::cout << "[DFSL] Error: In splitSoftBlock, tile not found in toTess\n";
+                        DFSLPrint(0, "In splitSoftBlock, tile not found in toTess\n");
                         return false;
                     }
                     fromTess->TileArr.push_back(newTile);
@@ -880,7 +898,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
                 Tile* newTile = mLF->splitTile(tile, tileRect);
 
                 if (newTile == NULL){
-                    std::cout << "[DFSL] Error: BB Split tile failed\n";
+                    DFSLPrint(0, " BB Split tile failed\n");
                     return false;
                 }
                 else {
@@ -889,7 +907,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
                     
                     bool removed = removeFromVector(newTile, toTess->TileArr);
                     if (!removed){
-                        std::cout << "[DFSL] Error: In splitSoftBlock, tile not found in toTess\n";
+                        DFSLPrint(0, "In splitSoftBlock, tile not found in toTess\n");
                         return false;
                     }
                     fromTess->TileArr.push_back(newTile);
@@ -907,16 +925,18 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
     mBestCost = (double) INT_MAX;
     mMigratingArea = mAllNodes[overlapIndex].area;
 
-    std::cout << "[DFSL] Info: Migrating Overlap: " << mAllNodes[overlapIndex].nodeName << '\n';
+    DFSLPrint(2, "Migrating Overlap: %s\n", mAllNodes[overlapIndex].nodeName.c_str());
     for (DFSLEdge& edge: mAllNodes[overlapIndex].edgeList){
         dfs(edge, 0.0);
     }
 
     if (mBestPath.size() == 0){
-        std::cout << "Path not found. Layout unchanged\n\n";
+        DFSLPrint(3, "Path not found. Layout unchanged\n");
         return false;
     }
 
+    std::ostringstream messageStream;
+    messageStream << "Path: " << mAllNodes[overlapIndex].nodeName << " ";
     for (MigrationEdge& edge: mBestPath){
         if (mAllNodes[edge.toIndex].nodeType == DFSLTessType::BLANK){
             std::string direction;
@@ -938,14 +958,14 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                 direction = "error";
                 break;
             }
-            std::cout << "-> Whitespace " << direction << ' ' << mAllNodes[edge.fromIndex].nodeName 
+            messageStream << "-> Whitespace " << direction << ' ' << mAllNodes[edge.fromIndex].nodeName 
                         << " (LL: " << mAllNodes[edge.toIndex].tileList[0]->getLowerLeft() << ") ";
         }
         else {
-            std::cout << "-> " << mAllNodes[edge.toIndex].nodeName << ' ';
+            messageStream << "-> " << mAllNodes[edge.toIndex].nodeName << ' ';
         }
     }
-    std::cout << '\n';
+    DFSLPrint(3, messageStream.str().c_str());
 
     // go through path, find maximum resolvable area
     mResolvableArea = mMigratingArea;
@@ -964,13 +984,13 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
             }
         }
     }
-    std::cout << "Resolvable Area: " << mResolvableArea << "\n";
+    DFSLPrint(3, "Resolvable Area: %d\n", mResolvableArea);
 
     // start changing physical layout
     for (MigrationEdge& edge: mBestPath){
         DFSLNode& fromNode = mAllNodes[edge.fromIndex];
         DFSLNode& toNode = mAllNodes[edge.toIndex];
-        std::cout << "* " << fromNode.nodeName << " -> " << toNode.nodeName << ": \n";
+        DFSLPrint(3, "* %s -> %s:\n", fromNode.nodeName.c_str(), toNode.nodeName.c_str());
 
         if (fromNode.nodeType == DFSLTessType::OVERLAP && toNode.nodeType == DFSLTessType::SOFT){
             if (mResolvableArea < mMigratingArea){
@@ -978,15 +998,17 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                 std::vector<Tile*> newTiles;
                 bool result = splitOverlap(edge, newTiles);
 
-                std::cout << "Overlap not completely resolvable (overlap area: " << mMigratingArea << ", resolvable area: " << mResolvableArea << ")\n";
+                DFSLPrint(3, "Overlap not completely resolvable (overlap area: %d, resolvable area: %d)\n", mMigratingArea, mResolvableArea);
                 if (result){
-                    std::cout << "Splitting overlap tile. New tile:\n";
+                    std::ostringstream messageStream;
+
                     for (Tile* tile: newTiles){
-                        std::cout << "\t" << *tile << '\n';
+                        messageStream << "\t" << *tile << '\n';
                     }
+                    DFSLPrint(3, "Splitting overlap tile. New tile: \n%s", messageStream.str().c_str());
                 }
                 else {
-                    std::cout << "Split failed. Storing in value of remaining overlap area.\n";
+                    DFSLPrint(3, "Split failed. Storing in value of remaining overlap area.\n");
                     OverlapArea tempArea;
                     tempArea.index1 = *(fromNode.overlaps.begin());
                     tempArea.index2 = *(fromNode.overlaps.rbegin());
@@ -996,7 +1018,7 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                 }
             }
             else {
-                std::cout << "Removing " << toNode.nodeName << " attribute from " << fromNode.tileList.size() << " tiles\n";
+                DFSLPrint(3, "Removing %s attribute from %d tiles\n", toNode.nodeName.c_str(), fromNode.tileList.size());
                 int indexToRemove = edge.toIndex; // should be soft index
                 for (Tile* overlapTile: fromNode.tileList){
                     removeIndexFromOverlap(indexToRemove, overlapTile);
@@ -1005,51 +1027,56 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
         }
         else if (fromNode.nodeType == DFSLTessType::SOFT && toNode.nodeType == DFSLTessType::SOFT){
             if (edge.segment.direction == DIRECTION::NONE) {
-                std::cout << "[DFSL] ERROR: BB edge ( " << fromNode.nodeName << " -> " << toNode.nodeName << " ) must have DIRECTION\n";
+                DFSLPrint(0, "BB edge ( %s -> %s ) must have DIRECTION\n", fromNode.nodeName.c_str(), toNode.nodeName.c_str());
                 return false;
             }
 
             std::vector<Tile*> newTiles;
             bool result = splitSoftBlock(edge, newTiles);
             if (!result){
-                std::cout << "[DFSL] ERROR: BB flow ( " << fromNode.nodeName << " -> " << toNode.nodeName << " ) FAILED.\n";
+                DFSLPrint(0, "BB flow ( %s -> %s ) FAILED.\n", fromNode.nodeName.c_str(), toNode.nodeName.c_str());
                 return false;
             }
             else {
-                std::cout << "Splitting tiles. New " << fromNode.nodeName << " tiles: \n";
+                std::ostringstream messageStream;
+
+
                 for (Tile* tile: newTiles){
-                    std::cout << "\t" << *tile << '\n';
+                    messageStream << "\t" << *tile << '\n';
                 }
+                DFSLPrint(3, "Splitting tiles. New %s tile: \n%s", fromNode.nodeName.c_str(), messageStream.str().c_str());
             }
 
         }
         else if (fromNode.nodeType == DFSLTessType::SOFT && toNode.nodeType == DFSLTessType::BLANK){
             if (edge.segment.direction == DIRECTION::NONE) {
-                std::cout << "[DFSL] ERROR: BW edge ( " << fromNode.nodeName << " -> " << toNode.tileList[0]->getLowerLeft() << " ) must have DIRECTION\n";
+                std::ostringstream messageStream;
+                messageStream << toNode.tileList[0]->getLowerLeft();
+                DFSLPrint(0, "BW edge ( %s -> %s ) must have DIRECTION\n", fromNode.nodeName.c_str(), messageStream.str().c_str());
                 return false;
             }
             
             std::vector<Tile*> newTiles;
             bool result = placeInBlank(edge, newTiles);
             if (!result){
-                std::cout << "[DFSL] ERROR: BW flow ( " << fromNode.nodeName << " -> " << toNode.nodeName << " ) FAILED.\n";
+                DFSLPrint(0, "BW flow ( %s -> %s ) FAILED.\n", fromNode.nodeName.c_str(), toNode.nodeName.c_str());
                 return false;
             }
             else {
-                std::cout << "Placing tiles. New " << fromNode.nodeName << " tiles: \n";
+                std::ostringstream messageStream;
                 for (Tile* tile: newTiles){
-                    std::cout << "\t" << *tile << '\n';
+                    messageStream << "\t" << *tile << '\n';
                 }
+                DFSLPrint(3, "Placing tiles. New %s tiles: \n%s", fromNode.nodeName.c_str(), messageStream.str().c_str());
             }
 
         }
             // todo: deal with white -> white
         else {
-            std::cout << "[DFSL] Warning: Doing nothing for migrating path: " << fromNode.nodeName << " -> " << toNode.nodeName << '\n';
+            DFSLPrint(1, "Doing nothing for migrating path: %s -> %s\n", fromNode.nodeName.c_str(),  toNode.nodeName.c_str());
         }
     }
 
-    std::cout << "\n";
     // mLF->visualiseArtpiece("debug_DFSL.txt", true);
     return true;
 }
@@ -1096,7 +1123,7 @@ bool DFSLegalizer::placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTile
 void DFSLegalizer::removeIndexFromOverlap(int indexToRemove, Tile* overlapTile){
     if (indexToRemove < mFixedTessNum){
         // should not happen
-        std::cout << "[DFSL] ERROR: Migrating overlap to fixed block: " << mLF->fixedTesserae[indexToRemove]->getName() << '\n';
+        DFSLPrint(0, "Migrating overlap to fixed block: %s\n", mLF->fixedTesserae[indexToRemove]->getName());
         return;
     }
 
@@ -1205,7 +1232,7 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
         edgeType = EDGETYPE::WW;
     }
     else {
-        std::cout << "[DFSL] Warning: Edge shouldn't exist\n";
+        DFSLPrint(1, "Edge shouldn't exist\n");
         edgeType = EDGETYPE::BAD_EDGE;
     }
 
@@ -1322,7 +1349,9 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
                 BL.y = seg.segStart.y < seg.segEnd.y ? seg.segStart.y : seg.segEnd.y ;
             }
             else {
-                std::cout << "[DFSL] ERROR: BB edge ( " << fromNode.nodeName << " -> " << toNode.tileList[0]->getLowerLeft() << " ) has no DIRECTION\n";
+                std::ostringstream messageStream;
+                messageStream << toNode.tileList[0]->getLowerLeft();
+                DFSLPrint(0, "BB edge ( %s -> %s ) has no DIRECTION\n", fromNode.nodeName.c_str(),  messageStream.str().c_str());
             }
 
             Rectangle newArea(BL.x, BL.y, BL.x+width, BL.y+height);
@@ -1413,7 +1442,9 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
                 BL.y = seg.segStart.y < seg.segEnd.y ? seg.segStart.y : seg.segEnd.y ;
             }
             else {
-                std::cout << "[DFSL] WARNING: BW edge ( " << fromNode.nodeName << " -> " << toNode.tileList[0]->getLowerLeft() << " ) has no DIRECTION\n";
+                std::ostringstream messageStream;
+                messageStream << toNode.tileList[0]->getLowerLeft();
+                DFSLPrint(1, "BW edge ( %s -> %s ) has no DIRECTION\n", fromNode.nodeName.c_str(),  messageStream.str().c_str());
             }
 
             Rectangle newArea(BL.x, BL.y, BL.x+width, BL.y+height);
@@ -1739,13 +1770,12 @@ LegalInfo getLegalInfo(std::set<Tile*>& tiles){
     return legal;
 } 
 
-// 0 : All messages, warnings, errors
-// 1 (default): Important messages, warnings, errors
-// 2 : Important messages, errors
-// 3 : Only errors
+// 0 : Errors
+// 1 : Warnings
+// 2 : Standard info
+// 3 : Verbose info
 void DFSLegalizer::setOutputLevel(int level){
-    
-    this->mOutputLevel = level;
+    this->mOutputLevel = (DFSL_PRINTLEVEL) level;
 }
 
 LegalInfo getLegalInfo(Polygon90Set& tiles){
