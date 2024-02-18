@@ -379,6 +379,27 @@ void DFSLegalizer::getTessNeighbors(int nodeId, std::set<int>& allNeighbors){
     }
 }
 
+void DFSLegalizer::printFloorplanStats(){
+    DFSLPrint(2, "Remaining overlaps: %d\n", mOverlapNum);
+    long overlapArea = 0, physicalArea = 0, dieArea = mLF->getCanvasWidth() * mLF->getCanvasHeight();
+    int overlapStart = mFixedTessNum + mSoftTessNum;
+    int overlapEnd = overlapStart + mOverlapNum;
+    for (int i = overlapStart; i < overlapEnd; i++){
+        DFSLNode& currentOverlap = mAllNodes[i];
+        overlapArea += currentOverlap.area;
+    }
+    physicalArea = dieArea;
+    int blankStartIndex = mFixedTessNum + mSoftTessNum + mOverlapNum;
+    int blankEndIndex = blankStartIndex + mBlankNum;
+    for (int i = blankStartIndex; i < blankEndIndex; i++){
+        DFSLNode& currentBlank = mAllNodes[i];
+        physicalArea -= currentBlank.area;
+    }
+    double overlapOverDie = (double) overlapArea / (double) dieArea;
+    double overlapOverPhysical = (double) overlapArea / (double) physicalArea;
+    DFSLPrint(2, "Total Overlap Area: %6ld\t(o/d = %5.4f%\to/p = %5.4f%)\n", overlapArea, overlapOverDie * 100, overlapOverPhysical * 100);
+}
+
 // mode 0: resolve area big -> area small
 // mode 1: resolve area small -> area big
 // mode 2: resolve overlaps near center -> outer edge
@@ -386,9 +407,13 @@ void DFSLegalizer::getTessNeighbors(int nodeId, std::set<int>& allNeighbors){
 RESULT DFSLegalizer::legalize(int mode){
     // todo: create backup (deep copy)
     RESULT result;
-
+    int iteration = 0;
     std::srand(69);
+    DFSLPrint(2, "Starting Legalization\n");
     while (1) {
+        if (iteration % 10 == 0){
+            printFloorplanStats();
+        }
         int overlapStart = mFixedTessNum + mSoftTessNum;
         int overlapEnd = overlapStart + mOverlapNum;
 
@@ -491,6 +516,7 @@ RESULT DFSLegalizer::legalize(int mode){
         }
 
         constructGraph();
+        iteration++;
     }
 
     // mLF->visualiseArtpiece("debug_DFSL_result.txt", true);
@@ -513,7 +539,7 @@ RESULT DFSLegalizer::legalize(int mode){
             result = RESULT::CONSTRAINT_FAIL;
         }
         else if (legal.aspectRatio < 1.0 / ASPECT_RATIO_RULE && node.nodeType == DFSLTessType::SOFT){
-            DFSLPrint(1, "aspect ratio for %s fail (%3.2f < %3.2f)\n", node.nodeName.c_str(), legal.aspectRatio, ASPECT_RATIO_RULE);
+            DFSLPrint(1, "aspect ratio for %s fail (%3.2f < %3.2f)\n", node.nodeName.c_str(), legal.aspectRatio, 1.0 / ASPECT_RATIO_RULE);
             result = RESULT::CONSTRAINT_FAIL;
         }
 
@@ -925,10 +951,11 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
     mBestCost = (double) INT_MAX;
     mMigratingArea = mAllNodes[overlapIndex].area;
 
-    DFSLPrint(2, "Migrating Overlap: %s\n", mAllNodes[overlapIndex].nodeName.c_str());
+    DFSLPrint(3, "\nMigrating Overlap: %s\n", mAllNodes[overlapIndex].nodeName.c_str());
     for (DFSLEdge& edge: mAllNodes[overlapIndex].edgeList){
         dfs(edge, 0.0);
     }
+    DFSLPrint(3, "Path cost: %f\n", mBestCost);
 
     if (mBestPath.size() == 0){
         DFSLPrint(3, "Path not found. Layout unchanged\n");

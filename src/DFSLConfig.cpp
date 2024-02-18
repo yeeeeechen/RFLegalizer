@@ -12,7 +12,7 @@ Config::Config():
     // block -> whitespcae flow costs
     BWUtilWeight(1500.0),
     BWUtilPosRein(-500.0),
-    BWAspWeight(500.0),
+    BWAspWeight(90.0),
 
     // block -> block flow costs
     BBAreaWeight(150.0),
@@ -20,7 +20,7 @@ Config::Config():
     BBFromUtilPosRein(-500.0),    
     BBToUtilWeight(1750.0),
     BBToUtilPosRein(-100.0),
-    BBAspWeight(50.0),
+    BBAspWeight(30.0),
     BBFlatCost(150.0),
 
     // whitespace -> whitespace flow costs
@@ -28,7 +28,7 @@ Config::Config():
 
     // misc configs
     // turn this on if integer division causes modules to not have required area
-    exactAreaMigration(false),
+    exactAreaMigration(true),
     migrationAreaLimit(false),
     maxMigrationAreaInSingleIteration(0.01)
     { ; }

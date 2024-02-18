@@ -78,6 +78,7 @@ int main(int argc, char const *argv[]) {
     DFSL::DFSLegalizer dfsl;
 
     LFLegaliser legalizedFloorplan(*(legaliser));
+    dfsl.setOutputLevel(3);
     dfsl.initDFSLegalizer(&(legalizedFloorplan));
 
     double storeOBAreaWeight;
@@ -106,19 +107,19 @@ int main(int argc, char const *argv[]) {
         std::cout << "legalStrategy = 1, prioritizing area\n";
         dfsl.config.OBAreaWeight = storeOBAreaWeight = 1400.0;
         dfsl.config.OBUtilWeight = storeOBUtilWeight = 750.0;
-        dfsl.config.OBAspWeight = storeOBAspWeight = 100.0;
+        dfsl.config.OBAspWeight = storeOBAspWeight = 80.0;
 
         dfsl.config.BWUtilWeight = storeBWUtilWeight = 750.0;
-        dfsl.config.BWAspWeight = storeBWAspWeight = 500.0;
+        dfsl.config.BWAspWeight = storeBWAspWeight = 80.0;
     }
     else if (legalStrategy == 2){
         // prioritize util
         std::cout << "legalStrategy = 2, prioritizing utilization\n";
-        dfsl.config.OBAreaWeight = storeOBAreaWeight  = 750.0;
+        dfsl.config.OBAreaWeight = storeOBAreaWeight  = 700.0;
         dfsl.config.OBUtilWeight = storeOBUtilWeight  = 900.0;
-        dfsl.config.OBAspWeight = storeOBAspWeight = 100.0;
+        dfsl.config.OBAspWeight = storeOBAspWeight = 40.0;
         dfsl.config.BWUtilWeight = storeBWUtilWeight = 2000.0;
-        dfsl.config.BWAspWeight = storeBWAspWeight = 500.0;
+        dfsl.config.BWAspWeight = storeBWAspWeight = 40.0;
         dfsl.config.BWUtilPosRein = storeBWUtilPosRein = -1000.0;
     }
     else if (legalStrategy == 3){
@@ -126,16 +127,16 @@ int main(int argc, char const *argv[]) {
         std::cout << "legalStrategy = 3, prioritizing aspect ratio\n";
         dfsl.config.OBAreaWeight = storeOBAreaWeight  = 750.0;
         dfsl.config.OBUtilWeight = storeOBUtilWeight  = 1100.0;
-        dfsl.config.OBAspWeight = storeOBAspWeight = 500.0;
+        dfsl.config.OBAspWeight = storeOBAspWeight = 300.0;
         dfsl.config.BWUtilWeight = storeBWUtilWeight = 1000.0;
-        dfsl.config.BWAspWeight = storeBWAspWeight = 1200.0;
+        dfsl.config.BWAspWeight = storeBWAspWeight = 800.0;
     }
     else if (legalStrategy == 4){
         // favor block -> block flow more
         std::cout << "legalStrategy = 4, prioritizing block -> block flow\n";
         dfsl.config.OBAreaWeight = storeOBAreaWeight  = 1000.0;
         dfsl.config.OBUtilWeight = storeOBUtilWeight  = 1250.0;
-        dfsl.config.OBAspWeight = storeOBAspWeight = 1500.0;
+        dfsl.config.OBAspWeight = storeOBAspWeight = 400.0;
 
         dfsl.config.BWUtilWeight = storeBWUtilWeight = 1800.0;
         dfsl.config.BWAspWeight = storeBWAspWeight = 700.0;
@@ -143,8 +144,8 @@ int main(int argc, char const *argv[]) {
         dfsl.config.BBAreaWeight = storeBBAreaWeight = 100.0;
         dfsl.config.BBFromUtilWeight = storeBBFromUtilWeight = 450.0;
         dfsl.config.BBToUtilWeight = storeBBToUtilWeight = 500.0;
-        dfsl.config.BBAspWeight = storeBBAspWeight = 20.0;
-        dfsl.config.BBFlatCost = storeBBFlatCost = -50;
+        dfsl.config.BBAspWeight = storeBBAspWeight = 10.0;
+        dfsl.config.BBFlatCost = storeBBFlatCost = -30;
     }
     std::cout << "Legalization mode: " << legalMode << std::endl;
 

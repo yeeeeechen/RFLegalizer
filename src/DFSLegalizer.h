@@ -82,6 +82,7 @@ public:
     void constructGraph();
     void setOutputLevel(int level);
     void DFSLPrint(int level, const char* fmt...);
+    void printFloorplanStats();
     Config config;
 };
 
