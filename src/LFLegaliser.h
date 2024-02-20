@@ -95,8 +95,6 @@ public:
     
     Tile* splitTile(Tile* tile, Rectangle rect);
 
-    void visualiseArtpiece(const std::string outputFileName, bool checkBlankTile);
-    void visualiseDebug(const std::string outputFileName);
     void visualiseAddMark(Tile *markTile);
     void visualiseRemoveAllmark();
 
@@ -105,11 +103,15 @@ public:
 
     bool searchTesseraeIncludeTile(Tile *tile, std::vector <Tessera *> &inTessera) const;
 
-    void printOutput(std::string outputFileName);
     void collectAllTiles(std::vector<Tile *> &allTiles) const;
 
     double calculateHPWL();
-    void outputFloorplan(std::string outputFileName);
+
+    // io related
+    void outputTileFloorplan(std::string outputFileName, std::string floorplanName = "");
+    void outputFullFloorplan(std::string outputFileName, std::string floorplanName = "");
+    void visualiseArtpiece(const std::string outputFileName, bool checkBlankTile);
+    void visualiseDebug(const std::string outputFileName);
 };
 
 bool checkVectorInclude(std::vector<Cord> &vec, Cord c);

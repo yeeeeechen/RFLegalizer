@@ -39,5 +39,5 @@ legal_debug: $(OBJ_DEBUG)
 
 
 clean:
-	@echo "$(MSG_PREFIX)\`\` Cleaning up..."
-	rm -rf legal legal_debug *.o
+	@echo "Cleaning up..."
+	rm -rf legal legal_debug ./src/*.o 

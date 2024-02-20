@@ -2374,10 +2374,44 @@ double LFLegaliser::calculateHPWL(){
 }
 
 
-void LFLegaliser::outputFloorplan(std::string outputFileName){
+void LFLegaliser::outputFullFloorplan(std::string outputFileName, std::string floorplanName){
     std::cout << "output Floorplan..." << outputFileName << std::endl;
 
     std::ofstream ofs(outputFileName);
+    ofs << floorplanName << std::endl;
+    ofs << "BLOCK " << fixedTesserae.size() + softTesserae.size() <<  std::endl;
+    ofs << this->mCanvasWidth << " " << this->mCanvasHeight << std::endl;
+
+    if(fixedTesserae.size() == 0 && softTesserae.size() == 0){
+        //there is no blocks
+        ofs.close();
+        return;
+    }
+
+    ofs << "SOFTBLOCK " << softTesserae.size() << std::endl;
+    for(Tessera *tess : softTesserae){
+        tess->printCorners(ofs);
+    }
+
+    ofs << "FIXEDBLOCK " << fixedTesserae.size() << std::endl;
+    for(Tessera *tess : fixedTesserae){
+        tess->printCorners(ofs);
+    }
+
+    ofs << "CONNECTION " << connectionList.size() << std::endl;
+    for (Connection& connection: connectionList){
+        for (std::string moduleName: connection.modules){
+            ofs << moduleName << ' ';
+        }
+        ofs << connection.value << std::endl;
+    }
+}
+
+void LFLegaliser::outputTileFloorplan(std::string outputFileName, std::string floorplanName){
+    std::cout << "output Floorplan..." << outputFileName << std::endl;
+
+    std::ofstream ofs(outputFileName);
+    ofs << floorplanName << std::endl;
     ofs << "BLOCK " << fixedTesserae.size() + softTesserae.size() <<  std::endl;
     ofs << this->mCanvasWidth << " " << this->mCanvasHeight << std::endl;
 
