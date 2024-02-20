@@ -37,6 +37,21 @@ int main(int argc, char const *argv[]) {
     LFLegaliser *legaliser = nullptr;
     double bestHpwl = DBL_MAX;
     std::string filename = argv[1];
+
+    // find filename
+    std::size_t casenameStart = filename.find_last_of("/\\");
+    std::size_t casenameEnd = filename.find_last_of(".");
+    if (casenameStart == std::string::npos){
+        casenameStart = 0;
+    }
+    else {
+        casenameStart++;
+    }
+    if (casenameEnd <= casenameStart || casenameEnd == std::string::npos){
+        casenameEnd = std::string::npos;
+    }
+    std::string casename = filename.substr(casenameStart, casenameEnd);
+    std::cout << " casename: " << casename << '\n';
     
     legaliser = new LFLegaliser((len_t) 1000, (len_t) 1000);
 
@@ -72,7 +87,7 @@ int main(int argc, char const *argv[]) {
     }
 
 
-    legaliser->visualiseArtpiece("outputs/phase2.txt", true);
+    legaliser->visualiseArtpiece("outputs/" + casename + "_phase2.txt", true);
 
     std::cout << std::endl << std::endl;
     DFSL::DFSLegalizer dfsl;
@@ -167,14 +182,14 @@ int main(int argc, char const *argv[]) {
         std::cout << "Impossible to solve, restarting process...\n" << std::endl;
     }
 
-    legalizedFloorplan.visualiseArtpiece("outputs/legal_" + std::to_string(legalStrategy) + "_" + std::to_string(legalMode) + ".txt", true);
+    legalizedFloorplan.visualiseArtpiece("outputs/" + casename + "_legal_" + std::to_string(legalStrategy) + "_" + std::to_string(legalMode) + ".txt", true);
     
     double finalScore = legalizedFloorplan.calculateHPWL();
     printf("Final Score = %12.6f\n", finalScore);
     if (finalScore < bestHpwl){
         bestHpwl = finalScore;
         std::cout << "Best Hpwl found\n";
-        legalizedFloorplan.outputFloorplan("outputs/legal.txt");
+        legalizedFloorplan.outputFloorplan("outputs/" + casename + "_legal.txt");
     }
     
     printf("best hpwl = %12.6f\n", bestHpwl);
