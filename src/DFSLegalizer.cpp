@@ -646,6 +646,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
     for (DFSLEdge& fromEdge: fromNode.edgeList){
         if (fromEdge.fromIndex == edge.fromIndex && fromEdge.toIndex == edge.toIndex){
             fullEdge = &fromEdge;
+            break;
         }
     }
     if (fullEdge == NULL){
@@ -914,7 +915,8 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
     }
 
     if (gtl::area(remainderRect) > 0 && config.exactAreaMigration){
-        for (Tile* tile: toNode.tileList){
+        std::vector<Tile*>& updatedTileList = mLF->softTesserae[edge.toIndex - mFixedTessNum]->TileArr;
+        for (Tile* tile: updatedTileList){
             Rectangle tileRect = tile2Rectangle(tile);
 
             // known boost polygon issue: intersect does not pass the value of considerTouch to intersects
@@ -1029,8 +1031,13 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                 if (result){
                     std::ostringstream messageStream;
 
+                    int actualAreaCount = 0;
                     for (Tile* tile: newTiles){
                         messageStream << "\t" << *tile << '\n';
+                        actualAreaCount += tile->getArea();
+                    }
+                    if (actualAreaCount != mResolvableArea){
+                        DFSLPrint(3, "Uh oh (actual: %d)\n", actualAreaCount);
                     }
                     DFSLPrint(3, "Splitting overlap tile. New tile: \n%s", messageStream.str().c_str());
                 }
@@ -1067,9 +1074,13 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
             else {
                 std::ostringstream messageStream;
 
-
+                int actualAreaCount = 0;
                 for (Tile* tile: newTiles){
                     messageStream << "\t" << *tile << '\n';
+                    actualAreaCount += tile->getArea();
+                }
+                if (actualAreaCount != mResolvableArea){
+                    DFSLPrint(3, "Uh oh (actual: %d)\n", actualAreaCount);
                 }
                 DFSLPrint(3, "Splitting tiles. New %s tile: \n%s", fromNode.nodeName.c_str(), messageStream.str().c_str());
             }
@@ -1091,8 +1102,13 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
             }
             else {
                 std::ostringstream messageStream;
+                int actualAreaCount = 0;
                 for (Tile* tile: newTiles){
                     messageStream << "\t" << *tile << '\n';
+                    actualAreaCount += tile->getArea();
+                }
+                if (actualAreaCount != mResolvableArea){
+                    DFSLPrint(3, "Uh oh (actual: %d)\n", actualAreaCount);
                 }
                 DFSLPrint(3, "Placing tiles. New %s tiles: \n%s", fromNode.nodeName.c_str(), messageStream.str().c_str());
             }
@@ -1104,7 +1120,7 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
         }
     }
 
-    // mLF->visualiseArtpiece("debug_DFSL.txt", true);
+    // mLF->outputTileFloorplan("debug_DFSL.txt");
     return true;
 }
 

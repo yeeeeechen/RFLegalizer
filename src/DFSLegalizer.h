@@ -59,28 +59,33 @@ private:
     int mBlankNum;
     DFSL_PRINTLEVEL mOutputLevel;
     
+    // initialize related functions
+    void addOverlapInfo(Tile* tile);
+    void addSingleOverlapInfo(Tile* tile, int overlapIdx1, int overlapIdx2);
+    void getTessNeighbors(int nodeId, std::set<int>& allNeighbors);
+    void addBlockNode(Tessera* tess, bool isFixed);
+    std::string toOverlapName(int tessIndex1, int tessIndex2);
+
+    // DFS path finding
     bool migrateOverlap(int overlapIndex);
     void dfs(DFSLEdge& edge, double currentCost);
     MigrationEdge getEdgeCost(DFSLEdge& edge);
-    void addOverlapInfo(Tile* tile);
-    void addSingleOverlapInfo(Tile* tile, int overlapIdx1, int overlapIdx2);
-    std::string toOverlapName(int tessIndex1, int tessIndex2);
     void DFSLTraverseBlank(Tile* tile, std::vector <Cord> &record);
     void findEdge(int fromIndex, int toIndex);
-    void getTessNeighbors(int nodeId, std::set<int>& allNeighbors);
-    void addBlockNode(Tessera* tess, bool isFixed);
+    Rectangle getRectFromEdge(MigrationEdge& edge, bool findRemainder, Rectangle& remainderRect, bool useCeil);
+
+    // functions that change physical layout
+    bool placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTiles);
     bool splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTiles);
     bool splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTiles);
-    bool placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTiles);
-    Rectangle getRectFromEdge(MigrationEdge& edge, bool findRemainder, Rectangle& remainderRect, bool useCeil);
     void removeIndexFromOverlap(int indexToRemove, Tile* overlapTile);
 public:
     DFSLegalizer();
     ~DFSLegalizer();
-    void initDFSLegalizer(LFLegaliser* floorplan);
-    RESULT legalize(int mode);
-    void constructGraph();
     void setOutputLevel(int level);
+    void initDFSLegalizer(LFLegaliser* floorplan);
+    void constructGraph();
+    RESULT legalize(int mode);
     void DFSLPrint(int level, const char* fmt...);
     void printFloorplanStats();
     Config config;

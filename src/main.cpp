@@ -97,7 +97,7 @@ int main(int argc, char const *argv[]) {
     DFSL::DFSLegalizer dfsl;
 
     LFLegaliser legalizedFloorplan(*(legaliser));
-    dfsl.setOutputLevel(2);
+    dfsl.setOutputLevel(3);
     dfsl.initDFSLegalizer(&(legalizedFloorplan));
 
     double storeOBAreaWeight;
