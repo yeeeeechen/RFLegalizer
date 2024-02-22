@@ -915,7 +915,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
     }
 
     if (gtl::area(remainderRect) > 0 && config.exactAreaMigration){
-        std::vector<Tile*>& updatedTileList = mLF->softTesserae[edge.toIndex - mFixedTessNum]->TileArr;
+        std::vector<Tile*> updatedTileList = mLF->softTesserae[edge.toIndex - mFixedTessNum]->TileArr;
         for (Tile* tile: updatedTileList){
             Rectangle tileRect = tile2Rectangle(tile);
 
