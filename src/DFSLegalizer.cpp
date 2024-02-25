@@ -1036,8 +1036,8 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                         messageStream << "\t" << *tile << '\n';
                         actualAreaCount += tile->getArea();
                     }
-                    if (actualAreaCount != mResolvableArea){
-                        DFSLPrint(3, "Uh oh (actual: %d)\n", actualAreaCount);
+                    if (actualAreaCount != mResolvableArea && config.exactAreaMigration){
+                        DFSLPrint(1, "Migration area mismatch (actual: %d)\n", actualAreaCount);
                     }
                     DFSLPrint(3, "Splitting overlap tile. New tile: \n%s", messageStream.str().c_str());
                 }
@@ -1079,8 +1079,8 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                     messageStream << "\t" << *tile << '\n';
                     actualAreaCount += tile->getArea();
                 }
-                if (actualAreaCount != mResolvableArea){
-                    DFSLPrint(3, "Uh oh (actual: %d)\n", actualAreaCount);
+                if (actualAreaCount != mResolvableArea && config.exactAreaMigration){
+                    DFSLPrint(1, "Migration area mismatch (actual: %d)\n", actualAreaCount);
                 }
                 DFSLPrint(3, "Splitting tiles. New %s tile: \n%s", fromNode.nodeName.c_str(), messageStream.str().c_str());
             }
@@ -1107,8 +1107,8 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                     messageStream << "\t" << *tile << '\n';
                     actualAreaCount += tile->getArea();
                 }
-                if (actualAreaCount != mResolvableArea){
-                    DFSLPrint(3, "Uh oh (actual: %d)\n", actualAreaCount);
+                if (actualAreaCount != mResolvableArea && config.exactAreaMigration){
+                    DFSLPrint(1, "Migration area mismatch (actual: %d)\n", actualAreaCount);
                 }
                 DFSLPrint(3, "Placing tiles. New %s tiles: \n%s", fromNode.nodeName.c_str(), messageStream.str().c_str());
             }

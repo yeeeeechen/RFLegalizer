@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cfloat>
 #include <stdio.h>
+#include <unistd.h>
+#include <ctime>
 
 #include "LFUnits.h"
 #include "Tile.h"
@@ -11,56 +13,100 @@
 #include "DFSLegalizer.h"
 
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char *argv[]) {
+    int legalStrategy = 0;
+    int legalMode = 0;
+    std::string inputFilename = "";
+    std::string casename = "";
+    
+    // print current time and date
+    const char* cyanText = "\u001b[36m";
+    const char* resetText = "\u001b[0m";
+    printf("Rectilinear Floorplan Legalizer: %sO%sverlap %sM%sigration via %sG%sraph Traversal\n", cyanText, resetText, cyanText, resetText, cyanText, resetText);
 
-    if (argc < 2){
-        std::cout << "Usage: " << argv[0] << " <filename> [legal strategy 0-4] [legal mode 0-3]\n";
+    const std::time_t now = std::time(nullptr);
+    std::cout << "Run at: " << std::asctime(std::localtime(&now)) << '\n';
+
+    int cmd_opt;
+    // "a": -a doesn't require argument
+    // "a:": -a requires a argument
+    // "a::" argument is optional for -a 
+    while((cmd_opt = getopt(argc, argv, ":hi:c:m:s:")) != -1) {
+        switch (cmd_opt) {
+        case 'h':
+            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-c <case name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>]\n";
+            return 0;
+        case 'i':
+            inputFilename = optarg;
+            break;
+        case 'c':
+            casename = optarg;
+            break;
+        case 'm':
+            legalMode = std::stoi(optarg);
+            break;
+        case 's':
+            legalStrategy = std::stoi(optarg);
+            break;
+        case '?':
+            fprintf(stderr, "Illegal option:-%c\n", isprint(optopt)?optopt:'#');
+            break;
+        case ':': // requires first char of optstring to be ':'
+            fprintf(stderr, "Option -%c requires an argument\n", optopt);
+        default:
+            return 1;
+            break;
+        }
+    }
+
+    // go thru arguments not parsed by getopt
+    if (argc > optind) {
+        for (int i = optind; i < argc; i++) {
+            fprintf(stderr, "Unknown argument: %s\n", argv[i]);
+        }
+    }
+
+    if (inputFilename == ""){
+        std::cerr << "Missing input file\n";
         return 1;
+    }    
+
+    // find casename
+    if (casename == ""){
+        std::size_t casenameStart = inputFilename.find_last_of("/\\");
+        std::size_t casenameEnd = inputFilename.find_last_of(".");
+        if (casenameStart == std::string::npos){
+            casenameStart = 0;
+        }
+        else {
+            casenameStart++;
+        }
+        size_t casenameLength;
+        if (casenameEnd <= casenameStart || casenameEnd == std::string::npos){
+            casenameLength = std::string::npos;
+        }
+        else {
+            casenameLength = casenameEnd - casenameStart;
+        }
+        casename = inputFilename.substr(casenameStart, casenameLength);
     }
 
-    int legalStrategy;
-    if (argc >= 3){
-        legalStrategy = atoi(argv[2]);
-    }
-    else {
-        legalStrategy = 0;
-    }
-
-    int legalMode;
-    if (argc >= 4){
-        legalMode = atoi(argv[3]);
-    }
-    else {
-        legalMode = 0;
-    }
+    std::cout << "Input file: " << inputFilename << '\n';
+    std::cout << "Case Name: " << casename << '\n';
+    std::cout << "Legalization mode: " << legalMode << '\n';
+    std::cout << "Legalization strategy: " << legalStrategy << '\n';
+    std::cout << std::endl;
 
     LFLegaliser *legaliser = nullptr;
     double bestHpwl = DBL_MAX;
-    std::string filename = argv[1];
-
-    // find filename
-    std::size_t casenameStart = filename.find_last_of("/\\");
-    std::size_t casenameEnd = filename.find_last_of(".");
-    if (casenameStart == std::string::npos){
-        casenameStart = 0;
-    }
-    else {
-        casenameStart++;
-    }
-    size_t casenameLength;
-    if (casenameEnd <= casenameStart || casenameEnd == std::string::npos){
-        casenameLength = std::string::npos;
-    }
-    else {
-        casenameLength = casenameEnd - casenameStart;
-    }
-    std::string casename = filename.substr(casenameStart, casenameLength);
-    std::cout << " casename: " << casename << '\n';
     
     legaliser = new LFLegaliser((len_t) 1000, (len_t) 1000);
 
-    std::cout << "Reading input from " + filename + "...\n";
-    legaliser->initFromGlobalFile(filename);
+    std::cout << "Reading input from " + inputFilename + "...\n";
+    bool success = legaliser->initFromGlobalFile(inputFilename);
+    if (!success){
+        return 1;
+    }
     legaliser->detectfloorplanningOverlaps();
 
     std::cout << "Splitting overlaps ...";
@@ -166,7 +212,25 @@ int main(int argc, char const *argv[]) {
         dfsl.config.BBAspWeight = storeBBAspWeight = 10.0;
         dfsl.config.BBFlatCost = storeBBFlatCost = -30;
     }
-    std::cout << "Legalization mode: " << legalMode << std::endl;
+
+    std::cout << "Legalization mode = " << legalMode << ",";
+    switch (legalMode)
+    {
+    case 0:
+        std::cout << "resolve area big -> area small\n";
+        break;
+    case 1:
+        std::cout << "resolve area small -> area big\n";
+        break;
+    case 2:
+        std::cout << "resolve overlaps near center -> outer edge\n";
+        break;
+    case 3:
+        std::cout << "completely random\n";
+        break;
+    default:
+        break;
+    }
 
     DFSL::RESULT legalResult = dfsl.legalize(legalMode);
 
@@ -180,10 +244,10 @@ int main(int argc, char const *argv[]) {
         }
     } 
     else if (legalResult == DFSL::RESULT::CONSTRAINT_FAIL ) {
-        std::cout << "Constraints FAIL, restarting process...\n" << std::endl;
+        std::cout << "Constraints FAIL\n" << std::endl;
     } 
     else {
-        std::cout << "Impossible to solve, restarting process...\n" << std::endl;
+        std::cout << "Impossible to solve\n" << std::endl;
     }
 
     legalizedFloorplan.outputTileFloorplan("outputs/" + casename + "_legal_" + std::to_string(legalStrategy) + "_" + std::to_string(legalMode) + ".txt", casename);

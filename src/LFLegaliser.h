@@ -56,7 +56,7 @@ public:
     len_t getCanvasHeight() const;
 
     void initFromFile(std::string path);    // for testing purposes (by ryan)
-    void initFromGlobalFile(std::string path); // for testing purposes (by ryan)
+    bool initFromGlobalFile(std::string path); // for testing purposes (by ryan)
     // void translateGlobalFloorplanning(const pp::GlobalSolver &solver);
     // void translateGlobalFloorplanning(const rg::GlobalSolver &solver);
     void detectfloorplanningOverlaps();
