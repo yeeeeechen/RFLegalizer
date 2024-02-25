@@ -551,6 +551,31 @@ RESULT DFSLegalizer::legalize(int mode){
             DFSLPrint(1, "Required area for fixed block %s fail (%d != %d)\n", node.nodeName.c_str(), legal.actualArea, requiredArea);
             result = RESULT::CONSTRAINT_FAIL;
         }
+
+        // test for fragmented polygons & holes
+        Polygon90Set polySet;
+        TileVec2PolySet(node.tileList, polySet);
+        std::vector<Polygon90WithHoles> polyContainer;
+        polySet.get_polygons(polyContainer);
+        if (polyContainer.size() > 1){
+            std::ostringstream messageStream;
+            for (Polygon90WithHoles poly: polyContainer){
+                Rectangle boundingBox;
+                gtl::extents(boundingBox, poly);
+                messageStream << "\t(" << gtl::xl(boundingBox) << ", " << gtl::yl(boundingBox) << "), W=" 
+                << gtl::delta(boundingBox, gtl::orientation_2d_enum::HORIZONTAL) << ", H="
+                << gtl::delta(boundingBox, gtl::orientation_2d_enum::VERTICAL) << '\n';
+            }
+            DFSLPrint(1, "Block %s has %d disjoint components:\n%s", node.nodeName.c_str(), polyContainer.size(), messageStream.str().c_str());
+            result = RESULT::CONSTRAINT_FAIL;
+        }
+        else {
+            if (polyContainer[0].size_holes() > 0){
+                DFSLPrint(1, "Block %s has %d holes\n", node.nodeName.c_str(), polyContainer[0].size_holes());
+                result = RESULT::CONSTRAINT_FAIL;
+            }
+        }
+
     }
     return result;
 }

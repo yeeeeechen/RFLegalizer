@@ -97,6 +97,10 @@ int main(int argc, char *argv[]) {
     std::cout << "Legalization strategy: " << legalStrategy << '\n';
     std::cout << std::endl;
 
+    // Start measuring CPU time
+    struct timespec start, end;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+
     LFLegaliser *legaliser = nullptr;
     double bestHpwl = DBL_MAX;
     
@@ -233,6 +237,8 @@ int main(int argc, char *argv[]) {
     }
 
     DFSL::RESULT legalResult = dfsl.legalize(legalMode);
+    // Stop measuring CPU time
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 
     std::cout << "DSFL DONE\n";
     if (legalResult == DFSL::RESULT::SUCCESS){
@@ -261,5 +267,8 @@ int main(int argc, char *argv[]) {
         legalizedFloorplan.outputFullFloorplan("outputs/" + casename + "_legal_fp.txt", casename);
     }
     
-    printf("best hpwl = %12.6f\n", bestHpwl);
+    printf("Best hpwl = %12.6f\n", bestHpwl);   
+
+    double elapsed = ( end.tv_sec - start.tv_sec ) + ( end.tv_nsec - start.tv_nsec ) / 1e9;
+    std::cout << "CPU time used: " << elapsed << " seconds." << std::endl;
 }

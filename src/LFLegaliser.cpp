@@ -244,8 +244,7 @@ bool LFLegaliser::initFromGlobalFile(std::string path){
     fin >> s >> blockNum >> s >> connectionNum;
     fin >> this->mCanvasWidth >> this->mCanvasHeight;
     for (int i = 0; i < blockNum; i++){
-        fin >> name >> type >> llx >> lly >> w >> h;
-        area = w * h;
+        fin >> name >> type >> area >> llx >> lly >> w >> h;
         int intx = round(llx);
         int inty = round(lly);
         if (intx < 0 || inty < 0 || (intx + w) > this->mCanvasWidth || (inty + h) > this->mCanvasHeight){
