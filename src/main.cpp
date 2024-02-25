@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
     DFSL::DFSLegalizer dfsl;
 
     LFLegaliser legalizedFloorplan(*(legaliser));
-    dfsl.setOutputLevel(3);
+    dfsl.setOutputLevel(2);
     dfsl.initDFSLegalizer(&(legalizedFloorplan));
 
     double storeOBAreaWeight;
@@ -242,12 +242,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "DSFL DONE\n";
     if (legalResult == DFSL::RESULT::SUCCESS){
-        std::cout << "Checking legality..." << std::endl;
-        for (Tessera* tess: legalizedFloorplan.softTesserae){
-            if (!tess->isLegal()){
-                std::cout << tess->getName() << " is not legal!" << std::endl;
-            }
-        }
+        std::cout << "Success lmao\n" << std::endl;
     } 
     else if (legalResult == DFSL::RESULT::CONSTRAINT_FAIL ) {
         std::cout << "Constraints FAIL\n" << std::endl;

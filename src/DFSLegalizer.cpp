@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <numeric>
 #include <sstream>
+#include <ctime> 
 #include <cstdarg>
 
 namespace DFSL {
@@ -409,6 +410,10 @@ RESULT DFSLegalizer::legalize(int mode){
     RESULT result;
     int iteration = 0;
     std::srand(69);
+    
+    // struct timespec start, end;
+    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+    
     DFSLPrint(2, "Starting Legalization\n");
     while (1) {
         if (iteration % 10 == 0){
@@ -517,6 +522,13 @@ RESULT DFSLegalizer::legalize(int mode){
 
         constructGraph();
         iteration++;
+        
+        // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+        // if (end.tv_sec - start.tv_sec > 2*60){
+        //     DFSLPrint(0, "Timeout\n");
+        //     result = RESULT::OVERLAP_NOT_RESOLVED;
+        //     return result;
+        // }
     }
 
     // mLF->visualiseArtpiece("debug_DFSL_result.txt", true);
@@ -525,6 +537,7 @@ RESULT DFSLegalizer::legalize(int mode){
     result = RESULT::SUCCESS;
     int nodeStart = 0;
     int nodeEnd = mFixedTessNum + mSoftTessNum;
+    int violations = 0;
     for (int i = nodeStart; i < nodeEnd; i++){
         int requiredArea = i < mFixedTessNum ? mLF->fixedTesserae[i]->getLegalArea() :  mLF->softTesserae[i-mFixedTessNum]->getLegalArea();
         DFSLNode& node = mAllNodes[i];
@@ -532,24 +545,29 @@ RESULT DFSLegalizer::legalize(int mode){
         if (legal.util < UTIL_RULE){
             DFSLPrint(1, "util for %s fail (%4.3f < %4.3f)\n", node.nodeName.c_str(), legal.util, UTIL_RULE);
             result = RESULT::CONSTRAINT_FAIL;
+            violations++;
         }
 
         if (legal.aspectRatio > ASPECT_RATIO_RULE && node.nodeType == DFSLTessType::SOFT){
             DFSLPrint(1, "aspect ratio for %s fail (%3.2f > %3.2f)\n", node.nodeName.c_str(), legal.aspectRatio, ASPECT_RATIO_RULE);
             result = RESULT::CONSTRAINT_FAIL;
+            violations++;
         }
         else if (legal.aspectRatio < 1.0 / ASPECT_RATIO_RULE && node.nodeType == DFSLTessType::SOFT){
             DFSLPrint(1, "aspect ratio for %s fail (%3.2f < %3.2f)\n", node.nodeName.c_str(), legal.aspectRatio, 1.0 / ASPECT_RATIO_RULE);
             result = RESULT::CONSTRAINT_FAIL;
+            violations++;
         }
 
         if (legal.actualArea < requiredArea && node.nodeType == DFSLTessType::SOFT){
             DFSLPrint(1, "Required area for soft block %s fail (%d < %d)\n", node.nodeName.c_str(), legal.actualArea, requiredArea);
-            result = RESULT::CONSTRAINT_FAIL;            
+            result = RESULT::CONSTRAINT_FAIL; 
+            violations++;           
         } 
         else if (legal.actualArea != requiredArea && node.nodeType == DFSLTessType::FIXED){
             DFSLPrint(1, "Required area for fixed block %s fail (%d != %d)\n", node.nodeName.c_str(), legal.actualArea, requiredArea);
             result = RESULT::CONSTRAINT_FAIL;
+            violations++;
         }
 
         // test for fragmented polygons & holes
@@ -568,15 +586,18 @@ RESULT DFSLegalizer::legalize(int mode){
             }
             DFSLPrint(1, "Block %s has %d disjoint components:\n%s", node.nodeName.c_str(), polyContainer.size(), messageStream.str().c_str());
             result = RESULT::CONSTRAINT_FAIL;
+            violations++;
         }
         else {
             if (polyContainer[0].size_holes() > 0){
                 DFSLPrint(1, "Block %s has %d holes\n", node.nodeName.c_str(), polyContainer[0].size_holes());
                 result = RESULT::CONSTRAINT_FAIL;
+                violations++;
             }
         }
 
     }
+    DFSLPrint(2, "Total Violations: %d\n", violations);
     return result;
 }
 
