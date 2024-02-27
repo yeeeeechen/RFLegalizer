@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
     int legalMode = 0;
     std::string inputFilename = "";
     std::string casename = "";
+    std::string outputDir = "./outputs";
     
     // print current time and date
     const char* cyanText = "\u001b[36m";
@@ -31,13 +32,16 @@ int main(int argc, char *argv[]) {
     // "a": -a doesn't require argument
     // "a:": -a requires a argument
     // "a::" argument is optional for -a 
-    while((cmd_opt = getopt(argc, argv, ":hi:c:m:s:")) != -1) {
+    while((cmd_opt = getopt(argc, argv, ":hi:o:c:m:s:")) != -1) {
         switch (cmd_opt) {
         case 'h':
-            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-c <case name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>]\n";
+            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-c <case name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>]\n";
             return 0;
         case 'i':
             inputFilename = optarg;
+            break;
+        case 'o':
+            outputDir = optarg;
             break;
         case 'c':
             casename = optarg;
@@ -67,7 +71,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (inputFilename == ""){
-        std::cerr << "Missing input file\n";
+        std::cerr << "Where is your input file?🤨🤨🤨\n";
         return 1;
     }    
 
@@ -92,6 +96,7 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "Input file: " << inputFilename << '\n';
+    std::cout << "Output directory: " << outputDir << '\n';
     std::cout << "Case Name: " << casename << '\n';
     std::cout << "Legalization mode: " << legalMode << '\n';
     std::cout << "Legalization strategy: " << legalStrategy << '\n';
@@ -141,7 +146,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    legaliser->outputTileFloorplan("outputs/" + casename + "_init.txt", casename);
+    legaliser->outputTileFloorplan(outputDir + "/" + casename + "_init.txt", casename);
 
     std::cout << std::endl << std::endl;
     DFSL::DFSLegalizer dfsl;
@@ -251,15 +256,15 @@ int main(int argc, char *argv[]) {
         std::cout << "Impossible to solve\n" << std::endl;
     }
 
-    legalizedFloorplan.outputTileFloorplan("outputs/" + casename + "_legal_" + std::to_string(legalStrategy) + "_" + std::to_string(legalMode) + ".txt", casename);
+    // legalizedFloorplan.outputTileFloorplan(outputDir + "/" + casename + "_legal_" + std::to_string(legalStrategy) + "_" + std::to_string(legalMode) + ".txt", casename);
     
     double finalScore = legalizedFloorplan.calculateHPWL();
     printf("Final Score = %12.6f\n", finalScore);
     if (finalScore < bestHpwl){
         bestHpwl = finalScore;
         std::cout << "Best Hpwl found\n";
-        legalizedFloorplan.outputTileFloorplan("outputs/" + casename + "_legal.txt", casename);
-        legalizedFloorplan.outputFullFloorplan("outputs/" + casename + "_legal_fp.txt", casename);
+        legalizedFloorplan.outputTileFloorplan(outputDir + "/" + casename + "_legal.txt", casename);
+        legalizedFloorplan.outputFullFloorplan(outputDir + "/" + casename + "_legal_fp.txt", casename);
     }
     
     printf("Best hpwl = %12.6f\n", bestHpwl);   
