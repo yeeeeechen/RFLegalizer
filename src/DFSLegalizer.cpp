@@ -540,6 +540,9 @@ RESULT DFSLegalizer::legalize(int mode){
     int violations = 0;
     for (int i = nodeStart; i < nodeEnd; i++){
         int requiredArea = i < mFixedTessNum ? mLF->fixedTesserae[i]->getLegalArea() :  mLF->softTesserae[i-mFixedTessNum]->getLegalArea();
+        if (requiredArea == 0){
+            continue;
+        }
         DFSLNode& node = mAllNodes[i];
         LegalInfo legal = getLegalInfo(node.tileList);
         if (legal.util < UTIL_RULE){

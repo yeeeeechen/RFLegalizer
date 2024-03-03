@@ -436,6 +436,16 @@ void Tessera::printCorners(std::ostream& fout){
     typedef gtl::polygon_traits<Polygon90>::point_type Point;
     typedef std::vector<gtl::polygon_90_data<int>> Polygon90Set;
 
+    // added by ryan
+    if (this->getLegalArea() == 0){
+        fout << getName() << " 4\n"; 
+        fout << TileArr[0]->getLowerLeft().x << ' ' << TileArr[0]->getLowerLeft().y << '\n';
+        fout << TileArr[0]->getLowerLeft().x << ' ' << TileArr[0]->getLowerLeft().y << '\n';
+        fout << TileArr[0]->getLowerLeft().x << ' ' << TileArr[0]->getLowerLeft().y << '\n';
+        fout << TileArr[0]->getLowerLeft().x << ' ' << TileArr[0]->getLowerLeft().y << '\n';
+        return;
+    }
+
     gtl::polygon_90_set_data<int> polygonSet;
 
     for (int i = 0; i < TileArr.size(); ++i){

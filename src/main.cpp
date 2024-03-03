@@ -151,9 +151,8 @@ int main(int argc, char *argv[]) {
     std::cout << std::endl << std::endl;
     DFSL::DFSLegalizer dfsl;
 
-    LFLegaliser legalizedFloorplan(*(legaliser));
     dfsl.setOutputLevel(2);
-    dfsl.initDFSLegalizer(&(legalizedFloorplan));
+    dfsl.initDFSLegalizer(legaliser);
 
     double storeOBAreaWeight;
     double storeOBUtilWeight;
@@ -256,15 +255,15 @@ int main(int argc, char *argv[]) {
         std::cout << "Impossible to solve\n" << std::endl;
     }
 
-    // legalizedFloorplan.outputTileFloorplan(outputDir + "/" + casename + "_legal_" + std::to_string(legalStrategy) + "_" + std::to_string(legalMode) + ".txt", casename);
+    // legaliser->outputTileFloorplan(outputDir + "/" + casename + "_legal_" + std::to_string(legalStrategy) + "_" + std::to_string(legalMode) + ".txt", casename);
     
-    double finalScore = legalizedFloorplan.calculateHPWL();
+    double finalScore = legaliser->calculateHPWL();
     printf("Final Score = %12.6f\n", finalScore);
     if (finalScore < bestHpwl){
         bestHpwl = finalScore;
         std::cout << "Best Hpwl found\n";
-        legalizedFloorplan.outputTileFloorplan(outputDir + "/" + casename + "_legal.txt", casename);
-        legalizedFloorplan.outputFullFloorplan(outputDir + "/" + casename + "_legal_fp.txt", casename);
+        legaliser->outputTileFloorplan(outputDir + "/" + casename + "_legal.txt", casename);
+        legaliser->outputFullFloorplan(outputDir + "/" + casename + "_legal_fp.txt", casename);
     }
     
     printf("Best hpwl = %12.6f\n", bestHpwl);   

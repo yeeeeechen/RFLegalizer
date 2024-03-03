@@ -29,6 +29,7 @@ LFLegaliser::~LFLegaliser() {
 
 }
 
+// TODO for ryan: copy constructor fails for cases where zero area tiles exist
 LFLegaliser::LFLegaliser(const LFLegaliser &other){
     this->mCanvasWidth = other.mCanvasWidth;
     this->mCanvasHeight = other.mCanvasHeight;
@@ -176,7 +177,9 @@ bool LFLegaliser::checkTileInCanvas(Tile &tile) const{
 Tile *LFLegaliser::getRandomTile() const{
     assert(!(fixedTesserae.empty() && softTesserae.empty()));
     
-    if(!fixedTesserae.empty()){
+    // modified by ryan
+    // original: if(!fixedTesserae.empty()){
+    if(!fixedTesserae.empty() && fixedTesserae[0]->getLegalArea() != 0){
         if(!fixedTesserae[0]->TileArr.empty()){
             return fixedTesserae[0]->TileArr[0];        
         }else{
@@ -570,10 +573,18 @@ void LFLegaliser::splitTesseraeOverlaps(){
     // now cut rectlinear blank space of each Tessera into multiple blank tiles.
 
     for(Tessera *fixedTess : this->fixedTesserae){
+        // added by ryan
+        if (fixedTess->getLegalArea() == 0){
+            continue;
+        }
         fixedTess->splitRectliearDueToOverlap();
     }
 
     for(Tessera *softTess : this->softTesserae){
+        // added by ryan
+        if (softTess->getLegalArea() == 0){
+            continue;
+        }
         softTess->splitRectliearDueToOverlap();
     }
 }
@@ -1635,6 +1646,11 @@ void LFLegaliser::arrangeTesseraetoCanvas(){
     for(Tessera *tess : this->fixedTesserae){
         std::cout << tess->getName()<<": Tiles->" << tess->TileArr.size() << ", Overlaps->" << tess->OverlapArr.size() << std::endl;
         
+        // added by ryan
+        if (tess->getLegalArea() == 0){
+            continue;
+        }
+
         for(Tile *tile : tess->TileArr){
             assert(!checkVectorInclude(record, tile->getLowerLeft()));
 
@@ -1664,6 +1680,11 @@ void LFLegaliser::arrangeTesseraetoCanvas(){
 
         std::cout << tess->getName()<<": Tiles->" << tess->TileArr.size() << ", Overlaps->" << tess->OverlapArr.size() << std::endl;
         
+        // added by ryan
+        if (tess->getLegalArea() == 0){
+            continue;
+        }
+
         Tile *tile;
         for(int j = 0; j < tess->TileArr.size(); ++j){
             tile = tess->TileArr[j];
@@ -1768,7 +1789,9 @@ void LFLegaliser::detectCombinableBlanks(std::vector <std::pair<Tile *, Tile *>>
     
     std::vector <Cord> record;
 
-    if(fixedTesserae.size() !=0 ){
+    // modified by ryan
+    // original: if(fixedTesserae.size() !=0){
+    if(fixedTesserae.size() !=0 && fixedTesserae[0]->getLegalArea() != 0){
         if(this->fixedTesserae[0]->TileArr.size() != 0){
             detectCombinableBlanksDFS(candidateTile, *(this->fixedTesserae[0]->TileArr[0]), record);
         }else{
