@@ -18,14 +18,9 @@ if not os.path.exists(csv_path):
 with open(global_log_path, 'r') as global_log:
     f = global_log.read().split("\n")
 
-    punishment_line = f[2]
-    punishment_list = punishment_line.split(" ")
-    try:
-        punishment = float(punishment_list[-1])
-    except ValueError:
-        punishment = 0.05
-
     for line in f:
+        if "Punishment is set to" in line:
+            punishment = float(line.split()[-1])
         if "Overlap Ratio" in line:
             overlap_ratio = line.split()[-2]
         if "Estimated HPWL" in line:
