@@ -16,9 +16,11 @@
 int main(int argc, char *argv[]) {
     int legalStrategy = 0;
     int legalMode = 0;
-    std::string inputFilename = "";
+    std::string inputFilePath = "";
     std::string casename = "";
     std::string outputDir = "./outputs";
+    std::string configFilePath = "";
+    bool useCustomConf = false;
     
     // print current time and date
     const char* cyanText = "\u001b[36m";
@@ -32,18 +34,19 @@ int main(int argc, char *argv[]) {
     // "a": -a doesn't require argument
     // "a:": -a requires a argument
     // "a::" argument is optional for -a 
-    while((cmd_opt = getopt(argc, argv, ":hi:o:c:m:s:")) != -1) {
+    while((cmd_opt = getopt(argc, argv, ":hi:o:f:c:m:s:")) != -1) {
         switch (cmd_opt) {
         case 'h':
-            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-c <case name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>]\n";
+            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-f <floorplan name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>] [-c <custom .conf file>]\n";
+            std::cout << "\tNote: If a custom config file (-c) is provided, then the -s option will be ignored.\n";
             return 0;
         case 'i':
-            inputFilename = optarg;
+            inputFilePath = optarg;
             break;
         case 'o':
             outputDir = optarg;
             break;
-        case 'c':
+        case 'f':
             casename = optarg;
             break;
         case 'm':
@@ -51,6 +54,10 @@ int main(int argc, char *argv[]) {
             break;
         case 's':
             legalStrategy = std::stoi(optarg);
+            break;
+        case 'c':
+            configFilePath = optarg;
+            useCustomConf = true;
             break;
         case '?':
             fprintf(stderr, "Illegal option:-%c\n", isprint(optopt)?optopt:'#');
@@ -70,15 +77,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (inputFilename == ""){
+    if (inputFilePath == ""){
+        std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-f <floorplan name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>] [-c <custom .conf file>]\n";
         std::cerr << "Where is your input file?🤨🤨🤨\n";
         return 1;
     }    
 
     // find casename
     if (casename == ""){
-        std::size_t casenameStart = inputFilename.find_last_of("/\\");
-        std::size_t casenameEnd = inputFilename.find_last_of(".");
+        std::size_t casenameStart = inputFilePath.find_last_of("/\\");
+        std::size_t casenameEnd = inputFilePath.find_last_of(".");
         if (casenameStart == std::string::npos){
             casenameStart = 0;
         }
@@ -92,14 +100,19 @@ int main(int argc, char *argv[]) {
         else {
             casenameLength = casenameEnd - casenameStart;
         }
-        casename = inputFilename.substr(casenameStart, casenameLength);
+        casename = inputFilePath.substr(casenameStart, casenameLength);
     }
 
-    std::cout << "Input file: " << inputFilename << '\n';
+    std::cout << "Input file: " << inputFilePath << '\n';
     std::cout << "Output directory: " << outputDir << '\n';
     std::cout << "Case Name: " << casename << '\n';
     std::cout << "Legalization mode: " << legalMode << '\n';
-    std::cout << "Legalization strategy: " << legalStrategy << '\n';
+    if (useCustomConf){
+        std::cout << "Reading Configs from: " << configFilePath << '\n';
+    }
+    else {
+        std::cout << "Legalization strategy: " << legalStrategy << '\n';
+    }
     std::cout << std::endl;
 
     // Start measuring CPU time
@@ -111,8 +124,8 @@ int main(int argc, char *argv[]) {
     
     legaliser = new LFLegaliser((len_t) 1000, (len_t) 1000);
 
-    std::cout << "Reading input from " + inputFilename + "...\n";
-    bool success = legaliser->initFromGlobalFile(inputFilename);
+    std::cout << "Reading input from " + inputFilePath + "...\n";
+    bool success = legaliser->initFromGlobalFile(inputFilePath);
     if (!success){
         return 1;
     }
@@ -154,71 +167,37 @@ int main(int argc, char *argv[]) {
     dfsl.setOutputLevel(2);
     dfsl.initDFSLegalizer(legaliser);
 
-    double storeOBAreaWeight;
-    double storeOBUtilWeight;
-    double storeOBAspWeight;
-    double storeOBUtilPosRein;
-    double storeBWUtilWeight;
-    double storeBWAspWeight;
-    double storeBWUtilPosRein;
-    double storeBBAreaWeight;
-    double storeBBFromUtilWeight;
-    double storeBBFromUtilPosRein;    
-    double storeBBToUtilWeight;
-    double storeBBToUtilPosRein;
-    double storeBBAspWeight;
-    double storeBBFlatCost;
-    
-    dfsl.config.resetDefault();
-    
-    if (legalStrategy == 0){
-        std::cout << "legalStrategy = 0, using default configs\n";
-        // default configs
-    }
-    else if (legalStrategy == 1){
-        // prioritize area 
-        std::cout << "legalStrategy = 1, prioritizing area\n";
-        dfsl.config.OBAreaWeight = storeOBAreaWeight = 1400.0;
-        dfsl.config.OBUtilWeight = storeOBUtilWeight = 750.0;
-        dfsl.config.OBAspWeight = storeOBAspWeight = 80.0;
+    // SETTING configs:
+    dfsl.config.setConfigValue<bool>("ExactAreaMigration", true);
 
-        dfsl.config.BWUtilWeight = storeBWUtilWeight = 750.0;
-        dfsl.config.BWAspWeight = storeBWAspWeight = 80.0;
+    // read config file 
+    if (useCustomConf){
+        dfsl.config.readConfigFile(configFilePath);
     }
-    else if (legalStrategy == 2){
-        // prioritize util
-        std::cout << "legalStrategy = 2, prioritizing utilization\n";
-        dfsl.config.OBAreaWeight = storeOBAreaWeight  = 700.0;
-        dfsl.config.OBUtilWeight = storeOBUtilWeight  = 900.0;
-        dfsl.config.OBAspWeight = storeOBAspWeight = 40.0;
-        dfsl.config.BWUtilWeight = storeBWUtilWeight = 2000.0;
-        dfsl.config.BWAspWeight = storeBWAspWeight = 40.0;
-        dfsl.config.BWUtilPosRein = storeBWUtilPosRein = -1000.0;
-    }
-    else if (legalStrategy == 3){
-        // prioritize aspect ratio
-        std::cout << "legalStrategy = 3, prioritizing aspect ratio\n";
-        dfsl.config.OBAreaWeight = storeOBAreaWeight  = 750.0;
-        dfsl.config.OBUtilWeight = storeOBUtilWeight  = 1100.0;
-        dfsl.config.OBAspWeight = storeOBAspWeight = 300.0;
-        dfsl.config.BWUtilWeight = storeBWUtilWeight = 1000.0;
-        dfsl.config.BWAspWeight = storeBWAspWeight = 800.0;
-    }
-    else if (legalStrategy == 4){
-        // favor block -> block flow more
-        std::cout << "legalStrategy = 4, prioritizing block -> block flow\n";
-        dfsl.config.OBAreaWeight = storeOBAreaWeight  = 1000.0;
-        dfsl.config.OBUtilWeight = storeOBUtilWeight  = 1250.0;
-        dfsl.config.OBAspWeight = storeOBAspWeight = 400.0;
-
-        dfsl.config.BWUtilWeight = storeBWUtilWeight = 1800.0;
-        dfsl.config.BWAspWeight = storeBWAspWeight = 700.0;
-
-        dfsl.config.BBAreaWeight = storeBBAreaWeight = 100.0;
-        dfsl.config.BBFromUtilWeight = storeBBFromUtilWeight = 450.0;
-        dfsl.config.BBToUtilWeight = storeBBToUtilWeight = 500.0;
-        dfsl.config.BBAspWeight = storeBBAspWeight = 10.0;
-        dfsl.config.BBFlatCost = storeBBFlatCost = -30;
+    else { if (legalStrategy == 1){
+            // prioritize area 
+            std::cout << "legalStrategy = 1, prioritizing area\n";
+            dfsl.config.readConfigFile("configs/strategy1.conf");
+        }
+        else if (legalStrategy == 2){
+            // prioritize util
+            std::cout << "legalStrategy = 2, prioritizing utilization\n";
+            dfsl.config.readConfigFile("configs/strategy2.conf");
+        }
+        else if (legalStrategy == 3){
+            // prioritize aspect ratio
+            std::cout << "legalStrategy = 3, prioritizing aspect ratio\n";
+            dfsl.config.readConfigFile("configs/strategy3.conf");
+        }
+        else if (legalStrategy == 4){
+            // favor block -> block flow more
+            std::cout << "legalStrategy = 4, prioritizing block -> block flow\n";
+            dfsl.config.readConfigFile("configs/strategy4.conf");
+        }
+        else {
+            std::cout << "legalStrategy = 0, using default configs\n";
+            // default configs
+        }
     }
 
     std::cout << "Legalization mode = " << legalMode << ",";

@@ -6,7 +6,7 @@
 #include <vector>
 #include <map>
 #include "LFLegaliser.h"
-#include "DFSLConfig.h"
+#include "DFSLConfig.hpp"
 
 namespace DFSL {
 
@@ -77,6 +77,7 @@ private:
     // functions that change physical layout
     bool placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTiles);
     bool splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTiles);
+    bool splitOverlap2(MigrationEdge& edge, std::vector<Tile*>& newTiles);
     bool splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTiles);
     void removeIndexFromOverlap(int indexToRemove, Tile* overlapTile);
 public:
@@ -88,7 +89,7 @@ public:
     RESULT legalize(int mode);
     void DFSLPrint(int level, const char* fmt...);
     void printFloorplanStats();
-    Config config;
+    DFSLC::ConfigList config;
 };
 
 bool removeFromVector(int a, std::vector<int>& vec);

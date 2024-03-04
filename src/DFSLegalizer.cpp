@@ -1,7 +1,7 @@
 #include "DFSLegalizer.h"
 #include "Tile.h"
 #include "LFLegaliser.h"
-#include "DFSLConfig.h"
+#include "DFSLConfig.hpp"
 #include <vector>
 #include <utility>
 #include <cstdint>
@@ -17,6 +17,7 @@ DFSLNode::DFSLNode(): area(0), index(0) {}
 
 DFSLegalizer::DFSLegalizer(): mOutputLevel(DFSL_PRINTLEVEL::DFSL_STANDARD)
 {
+    config.initAllConfigs();
 }
 
 DFSLegalizer::~DFSLegalizer()
@@ -683,6 +684,29 @@ Rectangle DFSLegalizer::getRectFromEdge(MigrationEdge& edge, bool findRemainder,
     return Rectangle(xl,yl,xh,yh);
 }
 
+bool DFSLegalizer::splitOverlap2(MigrationEdge& edge, std::vector<Tile*>& newTiles){
+    DFSLNode& fromNode = mAllNodes[edge.fromIndex];
+    DFSLNode& toNode = mAllNodes[edge.toIndex];
+    if (!(fromNode.nodeType == DFSLTessType::OVERLAP && toNode.nodeType == DFSLTessType::SOFT)){
+        DFSLPrint(0, "splitOverlap can only be used on overlap->soft edge.\n");
+        return false;
+    }
+    
+    DFSLEdge* fullEdge = NULL;
+    for (DFSLEdge& fromEdge: fromNode.edgeList){
+        if (fromEdge.fromIndex == edge.fromIndex && fromEdge.toIndex == edge.toIndex){
+            fullEdge = &fromEdge;
+            break;
+        }
+    }
+    if (fullEdge == NULL){
+        DFSLPrint(0, "OB edge not found.\n");
+        return false;
+    }
+  
+    // resolve rects of overlaps in order of (length of perimeter touching block)/(total perimeter)
+}
+
 bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTiles){
     DFSLNode& fromNode = mAllNodes[edge.fromIndex];
     DFSLNode& toNode = mAllNodes[edge.toIndex];
@@ -854,7 +878,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
 
             // if exact area migration, find remainder 
             // and split old overlap tile
-            if (config.exactAreaMigration && remainingMigrateArea > 0){
+            if (config.getConfigValue<bool>("ExactAreaMigration") && remainingMigrateArea > 0){
                 int height, width;
                 Rectangle remainderRectangle;
                 switch (bestDirection){
@@ -926,7 +950,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
     }
 
     Rectangle migratedRect, remainderRect(0,0,0,0);
-    if (config.exactAreaMigration){
+    if (config.getConfigValue<bool>("ExactAreaMigration")){
         migratedRect = getRectFromEdge(edge, true, remainderRect, false);
     }
     else {
@@ -963,7 +987,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
         }
     }
 
-    if (gtl::area(remainderRect) > 0 && config.exactAreaMigration){
+    if (gtl::area(remainderRect) > 0 && config.getConfigValue<bool>("ExactAreaMigration")){
         std::vector<Tile*> updatedTileList = mLF->softTesserae[edge.toIndex - mFixedTessNum]->TileArr;
         for (Tile* tile: updatedTileList){
             Rectangle tileRect = tile2Rectangle(tile);
@@ -1085,7 +1109,7 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                         messageStream << "\t" << *tile << '\n';
                         actualAreaCount += tile->getArea();
                     }
-                    if (actualAreaCount != mResolvableArea && config.exactAreaMigration){
+                    if (actualAreaCount != mResolvableArea && config.getConfigValue<bool>("ExactAreaMigration")){
                         DFSLPrint(1, "Migration area mismatch (actual: %d)\n", actualAreaCount);
                     }
                     DFSLPrint(3, "Splitting overlap tile. New tile: \n%s", messageStream.str().c_str());
@@ -1128,7 +1152,7 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                     messageStream << "\t" << *tile << '\n';
                     actualAreaCount += tile->getArea();
                 }
-                if (actualAreaCount != mResolvableArea && config.exactAreaMigration){
+                if (actualAreaCount != mResolvableArea && config.getConfigValue<bool>("ExactAreaMigration")){
                     DFSLPrint(1, "Migration area mismatch (actual: %d)\n", actualAreaCount);
                 }
                 DFSLPrint(3, "Splitting tiles. New %s tile: \n%s", fromNode.nodeName.c_str(), messageStream.str().c_str());
@@ -1156,7 +1180,7 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
                     messageStream << "\t" << *tile << '\n';
                     actualAreaCount += tile->getArea();
                 }
-                if (actualAreaCount != mResolvableArea && config.exactAreaMigration){
+                if (actualAreaCount != mResolvableArea && config.getConfigValue<bool>("ExactAreaMigration")){
                     DFSLPrint(1, "Migration area mismatch (actual: %d)\n", actualAreaCount);
                 }
                 DFSLPrint(3, "Placing tiles. New %s tiles: \n%s", fromNode.nodeName.c_str(), messageStream.str().c_str());
@@ -1179,7 +1203,7 @@ bool DFSLegalizer::placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTile
     Tessera* blockTess = mLF->softTesserae[fromNode.index - mFixedTessNum]; 
 
     Rectangle newRect, remainderRect(0,0,0,0);
-    if (config.exactAreaMigration){
+    if (config.getConfigValue<bool>("ExactAreaMigration")){
         newRect = getRectFromEdge(edge, true, remainderRect, false);
     }
     else {
@@ -1198,7 +1222,7 @@ bool DFSLegalizer::placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTile
         mLF->insertTile(*newTile);
     }
 
-    if (config.exactAreaMigration && gtl::area(remainderRect) > 0){
+    if (config.getConfigValue<bool>("ExactAreaMigration") && gtl::area(remainderRect) > 0){
         Tile* remainderTile = new Tile(tileType::BLOCK, Cord(gtl::xl(remainderRect), gtl::yl(remainderRect)),
                             gtl::delta(remainderRect, gtl::orientation_2d_enum::HORIZONTAL), 
                             gtl::delta(remainderRect, gtl::orientation_2d_enum::VERTICAL));
@@ -1286,7 +1310,7 @@ void DFSLegalizer::dfs(DFSLEdge& edge, double currentCost){
         }
     }
 
-    if (currentCost < config.maxCostCutoff){
+    if (currentCost < config.getConfigValue<double>("MaxCostCutoff")){
         for (DFSLEdge& nextEdge: mAllNodes[toIndex].edgeList){
             bool skip = false;
             for (MigrationEdge& edge: mCurrentPath){
@@ -1364,20 +1388,20 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
         // get area
         double overlapArea = overlapInfo.actualArea;
         double blockArea = withoutOverlapInfo.actualArea;
-        double areaWeight = (overlapArea / blockArea) * config.OBAreaWeight;
+        double areaWeight = (overlapArea / blockArea) * config.getConfigValue<double>("OBAreaWeight");
 
         // get util
         double withOverlapUtil = withOverlapInfo.util;
         double withoutOverlapUtil = withoutOverlapInfo.util;
         // positive reinforcement if util is improved
-        double utilCost = (withOverlapUtil < withoutOverlapUtil) ? (withoutOverlapUtil - withOverlapUtil) * config.OBUtilPosRein :  
-                                                        (1.0 - withoutOverlapUtil) * config.OBUtilWeight;
+        double utilCost = (withOverlapUtil < withoutOverlapUtil) ? (withoutOverlapUtil - withOverlapUtil) * config.getConfigValue<double>("OBUtilPosRein") :  
+                                                        (1.0 - withoutOverlapUtil) * config.getConfigValue<double>("OBUtilWeight");
 
 
         // get value of long/short side without overlap
         double aspectRatio = withoutOverlapInfo.aspectRatio;
         aspectRatio = aspectRatio > 1.0 ? aspectRatio : 1.0/aspectRatio;
-        double aspectCost = pow(aspectRatio - 1.0, 4) * config.OBAspWeight;
+        double aspectCost = pow(aspectRatio - 1.0, 4) * config.getConfigValue<double>("OBAspWeight");
 
         edgeCost += areaWeight + utilCost + aspectCost;
 
@@ -1454,7 +1478,7 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
             LegalInfo newToBlockInfo = getLegalInfo(newToBlock);
 
             // area cost
-            double areaCost = ((double) oldFromBlockInfo.actualArea / (double) oldToBlockInfo.actualArea) * config.BBAreaWeight;
+            double areaCost = ((double) oldFromBlockInfo.actualArea / (double) oldToBlockInfo.actualArea) * config.getConfigValue<double>("BBAreaWeight");
 
             // get util
             double oldFromBlockUtil = oldFromBlockInfo.util;
@@ -1463,16 +1487,16 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
             double newToBlockUtil = newToBlockInfo.util;
             // positive reinforcement if util is improved
             double utilCost, fromUtilCost, toUtilCost;
-            fromUtilCost = (oldFromBlockUtil < newFromBlockUtil) ? (newFromBlockUtil - oldFromBlockUtil) * config.BBFromUtilPosRein :  
-                                                        (1.0 - newFromBlockUtil) * config.BBFromUtilWeight;
-            toUtilCost = (oldToBlockUtil < newToBlockUtil) ? (newToBlockUtil - oldToBlockUtil) * config.BBToUtilPosRein :  
-                                                        pow(1.0 - newToBlockUtil, 2) * config.BBToUtilWeight;
+            fromUtilCost = (oldFromBlockUtil < newFromBlockUtil) ? (newFromBlockUtil - oldFromBlockUtil) * config.getConfigValue<double>("BBFromUtilPosRein") :  
+                                                        (1.0 - newFromBlockUtil) * config.getConfigValue<double>("BBFromUtilWeight");
+            toUtilCost = (oldToBlockUtil < newToBlockUtil) ? (newToBlockUtil - oldToBlockUtil) * config.getConfigValue<double>("BBToUtilPosRein") :  
+                                                        pow(1.0 - newToBlockUtil, 2) * config.getConfigValue<double>("BBToUtilWeight");
             
             // get aspect ratio with new area
             double aspectRatio = newFromBlockInfo.aspectRatio;
             aspectRatio = aspectRatio > 1.0 ? aspectRatio : 1.0/aspectRatio;
             double arCost;
-            arCost = (aspectRatio - 1.0) * config.BBAspWeight;
+            arCost = (aspectRatio - 1.0) * config.getConfigValue<double>("BBAspWeight");
 
             double cost = areaCost + fromUtilCost + toUtilCost + arCost;
                             
@@ -1485,7 +1509,7 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
 
         bestSegment = edge.tangentSegments[bestSegmentIndex];
         returnRectangle = bestRectangle;
-        edgeCost += lowestCost + config.BBFlatCost;
+        edgeCost += lowestCost + config.getConfigValue<double>("BBFlatCost");
 
         break;
     }
@@ -1549,14 +1573,14 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
             double newBlockUtil = newBlockInfo.util;
             // positive reinforcement if util is improved
             double utilCost;
-            utilCost = (oldBlockUtil < newBlockUtil) ? (newBlockUtil - oldBlockUtil) * config.BWUtilPosRein :  
-                                                        (1.0 - newBlockUtil) * config.BWUtilWeight;
+            utilCost = (oldBlockUtil < newBlockUtil) ? (newBlockUtil - oldBlockUtil) * config.getConfigValue<double>("BWUtilPosRein") :  
+                                                        (1.0 - newBlockUtil) * config.getConfigValue<double>("BWUtilWeight");
 
             // get aspect ratio with new area
             double aspectRatio = newBlockInfo.aspectRatio;
             aspectRatio = aspectRatio > 1.0 ? aspectRatio : 1.0/aspectRatio;
             double arCost;
-            arCost = pow(aspectRatio - 1.0, 4.0) * config.BWAspWeight;
+            arCost = pow(aspectRatio - 1.0, 4.0) * config.getConfigValue<double>("BWAspWeight");
 
             double cost = utilCost + arCost;
                             
@@ -1575,11 +1599,11 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
     }
 
     case EDGETYPE::WW:
-        edgeCost += config.WWFlatCost;
+        edgeCost += config.getConfigValue<double>("WWFlatCost");
         break;
 
     default:
-        edgeCost += config.maxCostCutoff * 100;
+        edgeCost += config.getConfigValue<double>("MaxCostCutoff") * 100;
         break;
     }
 

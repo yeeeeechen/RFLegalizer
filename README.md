@@ -57,10 +57,18 @@ Legalization modes affects the order in which overlaps are resolved:
 - mode 3: completely random
 
 ### Custom Configs
-If you want to use custom configs, change the values in `src/DFSLConfig.cpp` and use strategy 0. 
+If you want to use custom configs, create a config with the following syntax:
+```conf
+# myConfigs.conf
+# This is comment
+[config 1] = [value]
+[config 2]=[value]
+...
+```
+And specify the path to this file in the command line using the `-c [config path]` option;
 
 The higher configs labeled `*Weight` are, the more a move will be punished if that metric is worse. Eg. if a block->block move (let's say Block A and Block B) causes Block A's utilization to be lower, then that move will be punished by an amount proportional to `(1.0 - (block A util)) * BBFromUtilWeight`.
 
 The more negative configs labelled `*PosRein` are, the more a move will be rewarded if that metric is improved. Eg. if a block->whitespace (let's say block A) move causes block A's utilization to be higher, then that move will be rewarded by an amount proportional to `((old block A util) - (new block A util)) * BWUtilPosRein`.
 
-Further details can be found in the function `DFSLegalizer::getEdgeCost()`.
+Further details can be found in the function `DFSLegalizer::getEdgeCost()` and file `DFSLConfig.cpp`.
