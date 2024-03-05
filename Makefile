@@ -13,9 +13,19 @@ OPTFLAGS = -O3
 DEBUGFLAGS = -g
 # DEBUGFLAGS = -gdwarf-4
 
-SRC := \
-	src/DFSLConfig.cpp src/DFSLegalizer.cpp src/LFLegaliser.cpp src/LFUnits.cpp \
-	src/Tessera.cpp src/Tile.cpp src/main.cpp
+LEGAL_SRC_PATH = src/legal
+FP_SRC_PATH = src/fp
+ 
+# If there are new source files, add them here
+LEGAL_SRC := \
+	$(LEGAL_SRC_PATH)/DFSLConfig.cpp $(LEGAL_SRC_PATH)/DFSLegalizer.cpp $(LEGAL_SRC_PATH)/LFLegaliser.cpp $(LEGAL_SRC_PATH)/LFUnits.cpp \
+	$(LEGAL_SRC_PATH)/Tessera.cpp $(LEGAL_SRC_PATH)/Tile.cpp $(LEGAL_SRC_PATH)/main.cpp
+
+FP_SRC := \
+
+
+SRC += LEGAL_SRC
+SRC += FP_SRC
 
 OBJ_ALL = $(patsubst %.cpp, %_all.o, $(SRC))
 OBJ_DEBUG = $(patsubst %.cpp, %_db.o, $(SRC))

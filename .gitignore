@@ -7,8 +7,8 @@ log/
 *.o*
 *.out
 .DS_Store
-legal
-legal_debug
+/legal
+/legal_debug
 answers/
 utils/verify
 pngs/
