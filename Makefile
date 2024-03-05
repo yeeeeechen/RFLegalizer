@@ -24,8 +24,8 @@ LEGAL_SRC := \
 FP_SRC := \
 
 
-SRC += LEGAL_SRC
-SRC += FP_SRC
+SRC += $(LEGAL_SRC)
+SRC += $(FP_SRC)
 
 OBJ_ALL = $(patsubst %.cpp, %_all.o, $(SRC))
 OBJ_DEBUG = $(patsubst %.cpp, %_db.o, $(SRC))
