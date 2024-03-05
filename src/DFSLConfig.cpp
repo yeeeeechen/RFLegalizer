@@ -29,6 +29,7 @@ void ConfigList::initAllConfigs(){
     // two ways to add a new config to the list:
     // newConfig<Type>("ConfigName", defaultValue,        "Description")
     // newConfig<Type>("ConfigName", defaultValue, Value, "Description")
+    newConfig<int>   ("OutputLevel"             , ConfigType::INT   ,   2                , "0 : Errors\n1 : Warnings\n2 : Standard info\n3 : Verbose info");
 
     newConfig<double>("MaxCostCutoff"           , ConfigType::DOUBLE,   5000.0           , "max cost cutoff for dfs"             );
 

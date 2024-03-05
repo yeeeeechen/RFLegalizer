@@ -20,6 +20,7 @@ int main(int argc, char *argv[]) {
     std::string casename = "";
     std::string outputDir = "./outputs";
     std::string configFilePath = "";
+    bool verbose = false;
     bool useCustomConf = false;
     
     // print current time and date
@@ -34,10 +35,10 @@ int main(int argc, char *argv[]) {
     // "a": -a doesn't require argument
     // "a:": -a requires a argument
     // "a::" argument is optional for -a 
-    while((cmd_opt = getopt(argc, argv, ":hi:o:f:c:m:s:")) != -1) {
+    while((cmd_opt = getopt(argc, argv, ":hi:o:f:c:m:s:v")) != -1) {
         switch (cmd_opt) {
         case 'h':
-            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-f <floorplan name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>] [-c <custom .conf file>]\n";
+            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-f <floorplan name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>] [-c <custom .conf file>] [-v]\n";
             std::cout << "\tNote: If a custom config file (-c) is provided, then the -s option will be ignored.\n";
             return 0;
         case 'i':
@@ -59,6 +60,8 @@ int main(int argc, char *argv[]) {
             configFilePath = optarg;
             useCustomConf = true;
             break;
+        case 'v':
+            verbose = true;
         case '?':
             fprintf(stderr, "Illegal option:-%c\n", isprint(optopt)?optopt:'#');
             break;
@@ -164,7 +167,6 @@ int main(int argc, char *argv[]) {
     std::cout << std::endl << std::endl;
     DFSL::DFSLegalizer dfsl;
 
-    dfsl.setOutputLevel(2);
     dfsl.initDFSLegalizer(legaliser);
 
     // SETTING configs:
@@ -204,6 +206,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // set verbose
+    if (verbose){
+        dfsl.setOutputLevel(DFSL::DFSL_VERBOSE);
+    }
+
     std::cout << "Legalization mode = " << legalMode << ",";
     switch (legalMode)
     {
@@ -223,10 +230,13 @@ int main(int argc, char *argv[]) {
         break;
     }
 
+    // start legalizing
     DFSL::RESULT legalResult = dfsl.legalize(legalMode);
+
     // Stop measuring CPU time
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 
+    // check legalize output
     std::cout << "DSFL DONE\n";
     if (legalResult == DFSL::RESULT::SUCCESS){
         std::cout << "Success lmao\n" << std::endl;
@@ -237,9 +247,8 @@ int main(int argc, char *argv[]) {
     else {
         std::cout << "Impossible to solve\n" << std::endl;
     }
-
-    // legaliser->outputTileFloorplan(outputDir + "/" + casename + "_legal_" + std::to_string(legalStrategy) + "_" + std::to_string(legalMode) + ".txt", casename);
-    
+   
+    // get hpwl
     double finalScore = legaliser->calculateHPWL();
     printf("Final Score = %12.6f\n", finalScore);
     if (finalScore < bestHpwl){

@@ -15,7 +15,7 @@ namespace DFSL {
 
 DFSLNode::DFSLNode(): area(0), index(0) {}
 
-DFSLegalizer::DFSLegalizer(): mOutputLevel(DFSL_PRINTLEVEL::DFSL_STANDARD)
+DFSLegalizer::DFSLegalizer()
 {
     config.initAllConfigs();
 }
@@ -28,7 +28,7 @@ DFSLegalizer::~DFSLegalizer()
 void DFSLegalizer::DFSLPrint(int level, const char* fmt, ...){
     va_list args;
     va_start( args, fmt );
-    if (mOutputLevel >= level){
+    if (config.getConfigValue<int>("OutputLevel") >= level){
         if ( level == DFSL_ERROR )
             printf( "[DFSL] ERROR  : " );
         else if ( level == DFSL_WARNING )
@@ -1891,8 +1891,8 @@ LegalInfo getLegalInfo(std::set<Tile*>& tiles){
 // 1 : Warnings
 // 2 : Standard info
 // 3 : Verbose info
-void DFSLegalizer::setOutputLevel(int level){
-    this->mOutputLevel = (DFSL_PRINTLEVEL) level;
+void DFSLegalizer::setOutputLevel(DFSL_PRINTLEVEL level){
+    config.setConfigValue<int>("OutputLevel",(int)level);
 }
 
 LegalInfo getLegalInfo(Polygon90Set& tiles){

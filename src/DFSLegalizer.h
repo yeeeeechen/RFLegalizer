@@ -57,7 +57,6 @@ private:
     int mSoftTessNum;
     int mOverlapNum;
     int mBlankNum;
-    DFSL_PRINTLEVEL mOutputLevel;
     
     // initialize related functions
     void addOverlapInfo(Tile* tile);
@@ -83,7 +82,7 @@ private:
 public:
     DFSLegalizer();
     ~DFSLegalizer();
-    void setOutputLevel(int level);
+    void setOutputLevel(DFSL_PRINTLEVEL level);
     void initDFSLegalizer(LFLegaliser* floorplan);
     void constructGraph();
     RESULT legalize(int mode);
