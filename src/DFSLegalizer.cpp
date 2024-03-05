@@ -420,6 +420,7 @@ RESULT DFSLegalizer::legalize(int mode){
         if (iteration % 10 == 0){
             printFloorplanStats();
         }
+        std::cout << std::flush;
         int overlapStart = mFixedTessNum + mSoftTessNum;
         int overlapEnd = overlapStart + mOverlapNum;
 

@@ -63,6 +63,10 @@ void ConfigList::initAllConfigs(){
 // [config 4]=[value]
 bool ConfigList::readConfigFile(std::string filename){
     std::ifstream fin(filename, std::ifstream::in);
+    if (!fin.is_open()){
+        std::cerr << "Input \"" << filename << "\" not opened " << std::endl;
+        return false;
+    }
     std::string line;
     // std::ws : modifier that discards leading whitespace from input stream
     while (std::getline(fin >> std::ws, line)){

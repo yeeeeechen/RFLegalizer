@@ -8,8 +8,10 @@ else
     mode=$3
 fi
 
+mkdir -p log outputs
+
 echo "Command: ./legal inputs/${1}.txt $strategy $mode | tee log/${1}.log"
-./legal -i inputs/${1}.txt -c ${1} -s $strategy -m $mode | tee log/${1}.log
+./legal -i inputs/${1}.txt -f ${1} -s $strategy -m $mode | tee log/${1}.log
 
 echo 
 echo "Drawing output:"

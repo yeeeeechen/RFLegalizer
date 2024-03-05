@@ -4,7 +4,7 @@ max=$4
 ar=$5
 
 legal_mode=2
-legal_strat=4
+legal_strat=0
 
 maxOverlap=3
 
@@ -20,6 +20,7 @@ LEGAL_LOG_PATH=${LEGAL_RESULTS_PATH}/${1}_legal_s${legal_strat}_m${legal_mode}.l
 CSV_PATH=${CSV_DIR_PATH}/${1}.csv
 
 mkdir -p ${GFP_RESULTS_PATH} ${LEGAL_RESULTS_PATH} ${CSV_DIR_PATH}
+make
 
 for ((i = 0; i <= $3; i++)); do
     punishment=$(python3 -c "print($min + ($max - $min) * $i / ${3})")

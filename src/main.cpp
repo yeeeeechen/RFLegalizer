@@ -172,7 +172,11 @@ int main(int argc, char *argv[]) {
 
     // read config file 
     if (useCustomConf){
-        dfsl.config.readConfigFile(configFilePath);
+        bool success = dfsl.config.readConfigFile(configFilePath);
+        if (!success){
+            std::cerr << "Error opening configs\n";
+            return 0;
+        }
     }
     else { if (legalStrategy == 1){
             // prioritize area 
