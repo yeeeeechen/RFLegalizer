@@ -1,6 +1,4 @@
 #include "DFSLegalizer.h"
-#include "Tile.h"
-#include "LFLegaliser.h"
 #include "DFSLConfig.hpp"
 #include <vector>
 #include <utility>
@@ -26,6 +24,7 @@ DFSLegalizer::~DFSLegalizer()
 
 
 void DFSLegalizer::DFSLPrint(int level, const char* fmt, ...){
+    using namespace DFSLC;
     va_list args;
     va_start( args, fmt );
     if (config.getConfigValue<int>("OutputLevel") >= level){
@@ -41,9 +40,8 @@ void DFSLegalizer::DFSLPrint(int level, const char* fmt, ...){
     }
 }
 
-void DFSLegalizer::initDFSLegalizer(LFLegaliser* floorplan){
-    mLF = floorplan;
-    mTransientOverlapArea.clear();
+void DFSLegalizer::initDFSLegalizer(Floorplan* floorplan){
+    mFP = floorplan;
     constructGraph();
 }
 
@@ -63,30 +61,30 @@ void DFSLegalizer::addBlockNode(Tessera* tess, bool isFixed){
 void DFSLegalizer::constructGraph(){
     mAllNodes.clear();
     mTilePtr2NodeIndex.clear();
-    mFixedTessNum = mLF->fixedTesserae.size();
-    mSoftTessNum = mLF->softTesserae.size();
+    mFixedTessNum = mFP->getPreplacedRectilinearCount();
+    mSoftTessNum = mFP->getSoftRectilinearCount();
 
     // find fixed and soft tess
-    for(int t = 0; t < mLF->fixedTesserae.size(); t++){
-        Tessera* tess = mLF->fixedTesserae[t];
+    for(int t = 0; t < mFP->fixedTesserae.size(); t++){
+        Tessera* tess = mFP->fixedTesserae[t];
         addBlockNode(tess, true);
     }
 
-    for(int t = 0; t < mLF->softTesserae.size(); t++){
-        Tessera* tess = mLF->softTesserae[t];
+    for(int t = 0; t < mFP->softTesserae.size(); t++){
+        Tessera* tess = mFP->softTesserae[t];
         addBlockNode(tess, false);
     }
 
     // find overlaps 
-    for(int t = 0; t < mLF->fixedTesserae.size(); t++){
-        Tessera* tess = mLF->fixedTesserae[t];
+    for(int t = 0; t < mFP->fixedTesserae.size(); t++){
+        Tessera* tess = mFP->fixedTesserae[t];
         for(Tile* overlap : tess->OverlapArr){
             addOverlapInfo(overlap);
         }
     }
 
-    for(int t = 0; t < mLF->softTesserae.size(); t++){
-        Tessera* tess = mLF->softTesserae[t];
+    for(int t = 0; t < mFP->softTesserae.size(); t++){
+        Tessera* tess = mFP->softTesserae[t];
         for(Tile* overlap : tess->OverlapArr){
             addOverlapInfo(overlap);
         }
@@ -96,7 +94,7 @@ void DFSLegalizer::constructGraph(){
     // find all blanks
     std::vector <Cord> blankRecord;
     // This line would cuase bug...
-    DFSLTraverseBlank(mLF->getRandomTile(), blankRecord);
+    DFSLTraverseBlank(mFP->getRandomTile(), blankRecord);
     mBlankNum = mAllNodes.size() - mFixedTessNum - mSoftTessNum - mOverlapNum;
 
 
@@ -259,16 +257,16 @@ void DFSLegalizer::findEdge(int fromIndex, int toIndex){
             std::vector<Tile*> neighbors;
             switch (dir) {
             case 0:
-                mLF->findTopNeighbors(tile, neighbors);
+                mFP->findTopNeighbors(tile, neighbors);
                 break;
             case 1:
-                mLF->findRightNeighbors(tile, neighbors);
+                mFP->findRightNeighbors(tile, neighbors);
                 break;
             case 2:
-                mLF->findDownNeighbors(tile, neighbors);
+                mFP->findDownNeighbors(tile, neighbors);
                 break;
             case 3:
-                mLF->findLeftNeighbors(tile, neighbors);
+                mFP->findLeftNeighbors(tile, neighbors);
                 break;
             }
             
@@ -366,7 +364,7 @@ void DFSLegalizer::getTessNeighbors(int nodeId, std::set<int>& allNeighbors){
     DFSLNode& node = mAllNodes[nodeId];
     std::vector<Tile*> allNeighborTiles;
     for (Tile* tile : node.tileList){
-        mLF->findAllNeighbors(tile, allNeighborTiles);
+        mFP->findAllNeighbors(tile, allNeighborTiles);
     }
 
     for (Tile* tile : allNeighborTiles){
@@ -383,7 +381,7 @@ void DFSLegalizer::getTessNeighbors(int nodeId, std::set<int>& allNeighbors){
 
 void DFSLegalizer::printFloorplanStats(){
     DFSLPrint(2, "Remaining overlaps: %d\n", mOverlapNum);
-    long overlapArea = 0, physicalArea = 0, dieArea = mLF->getCanvasWidth() * mLF->getCanvasHeight();
+    long overlapArea = 0, physicalArea = 0, dieArea = mFP->getCanvasWidth() * mFP->getCanvasHeight();
     int overlapStart = mFixedTessNum + mSoftTessNum;
     int overlapEnd = overlapStart + mOverlapNum;
     for (int i = overlapStart; i < overlapEnd; i++){
@@ -461,8 +459,8 @@ RESULT DFSLegalizer::legalize(int mode){
                     break;
                 
                 case 2:{
-                    int chipCenterx = mLF->getCanvasWidth() / 2;
-                    int chipCentery = mLF->getCanvasHeight() / 2;
+                    int chipCenterx = mFP->getCanvasWidth() / 2;
+                    int chipCentery = mFP->getCanvasHeight() / 2;
                     
                     int min_x, max_x, min_y, max_y;
                     min_x = min_y = INT_MAX;
@@ -541,7 +539,7 @@ RESULT DFSLegalizer::legalize(int mode){
     int nodeEnd = mFixedTessNum + mSoftTessNum;
     int violations = 0;
     for (int i = nodeStart; i < nodeEnd; i++){
-        int requiredArea = i < mFixedTessNum ? mLF->fixedTesserae[i]->getLegalArea() :  mLF->softTesserae[i-mFixedTessNum]->getLegalArea();
+        int requiredArea = i < mFixedTessNum ? mFP->fixedTesserae[i]->getLegalArea() :  mFP->softTesserae[i-mFixedTessNum]->getLegalArea();
         if (requiredArea == 0){
             continue;
         }
@@ -847,7 +845,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
             
             if (closestArea > 0){
                 // split tiles
-                Tile* newTile = mLF->splitTile(overlapTile, bestRectangle);
+                Tile* newTile = mFP->splitTile(overlapTile, bestRectangle);
                 switch (bestDirection){
                     case DIRECTION::TOP:
                         overlapTile = newTile->lb;
@@ -923,7 +921,7 @@ bool DFSLegalizer::splitOverlap(MigrationEdge& edge, std::vector<Tile*>& newTile
                     break;
                 }
                 // split tiles
-                Tile* remainderTile = mLF->splitTile(overlapTile, remainderRectangle);
+                Tile* remainderTile = mFP->splitTile(overlapTile, remainderRectangle);
                 if (remainderTile == NULL){
                     DFSLPrint(0, "Split tile failed (in exact area migration).\n");
                     return false;
@@ -966,15 +964,15 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
             bool intersects = gtl::intersects(tileRect, migratedRect, false);
             if (intersects){
                 gtl::intersect(tileRect, migratedRect, false);
-                Tile* newTile = mLF->splitTile(tile, tileRect);
+                Tile* newTile = mFP->splitTile(tile, tileRect);
 
                 if (newTile == NULL){
                     DFSLPrint(0, "BB Split tile failed.\n");
                     return false;
                 }
                 else {
-                    Tessera* fromTess = mLF->softTesserae[edge.fromIndex - mFixedTessNum];
-                    Tessera* toTess = mLF->softTesserae[edge.toIndex - mFixedTessNum];
+                    Tessera* fromTess = mFP->softTesserae[edge.fromIndex - mFixedTessNum];
+                    Tessera* toTess = mFP->softTesserae[edge.toIndex - mFixedTessNum];
                     
                     bool removed = removeFromVector(newTile, toTess->TileArr);
                     if (!removed){
@@ -989,7 +987,7 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
     }
 
     if (gtl::area(remainderRect) > 0 && config.getConfigValue<bool>("ExactAreaMigration")){
-        std::vector<Tile*> updatedTileList = mLF->softTesserae[edge.toIndex - mFixedTessNum]->TileArr;
+        std::vector<Tile*> updatedTileList = mFP->softTesserae[edge.toIndex - mFixedTessNum]->TileArr;
         for (Tile* tile: updatedTileList){
             Rectangle tileRect = tile2Rectangle(tile);
 
@@ -997,15 +995,15 @@ bool DFSLegalizer::splitSoftBlock(MigrationEdge& edge, std::vector<Tile*>& newTi
             bool intersects = gtl::intersects(tileRect, remainderRect, false);
             if (intersects){
                 gtl::intersect(tileRect, remainderRect, false);
-                Tile* newTile = mLF->splitTile(tile, tileRect);
+                Tile* newTile = mFP->splitTile(tile, tileRect);
 
                 if (newTile == NULL){
                     DFSLPrint(0, " BB Split tile failed\n");
                     return false;
                 }
                 else {
-                    Tessera* fromTess = mLF->softTesserae[edge.fromIndex - mFixedTessNum];
-                    Tessera* toTess = mLF->softTesserae[edge.toIndex - mFixedTessNum];
+                    Tessera* fromTess = mFP->softTesserae[edge.fromIndex - mFixedTessNum];
+                    Tessera* toTess = mFP->softTesserae[edge.toIndex - mFixedTessNum];
                     
                     bool removed = removeFromVector(newTile, toTess->TileArr);
                     if (!removed){
@@ -1201,7 +1199,7 @@ bool DFSLegalizer::migrateOverlap(int overlapIndex){
 bool DFSLegalizer::placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTiles){
     DFSLNode& fromNode = mAllNodes[edge.fromIndex];
     DFSLNode& toNode = mAllNodes[edge.toIndex];
-    Tessera* blockTess = mLF->softTesserae[fromNode.index - mFixedTessNum]; 
+    Tessera* blockTess = mFP->softTesserae[fromNode.index - mFixedTessNum]; 
 
     Rectangle newRect, remainderRect(0,0,0,0);
     if (config.getConfigValue<bool>("ExactAreaMigration")){
@@ -1220,7 +1218,7 @@ bool DFSLegalizer::placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTile
         newTiles.push_back(newTile);
         blockTess->TileArr.push_back(newTile);
 
-        mLF->insertTile(*newTile);
+        mFP->insertTile(*newTile);
     }
 
     if (config.getConfigValue<bool>("ExactAreaMigration") && gtl::area(remainderRect) > 0){
@@ -1232,7 +1230,7 @@ bool DFSLegalizer::placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTile
         newTiles.push_back(remainderTile);
         blockTess->TileArr.push_back(remainderTile);
 
-        mLF->insertTile(*remainderTile);
+        mFP->insertTile(*remainderTile);
     }
     return true;
 }
@@ -1240,7 +1238,7 @@ bool DFSLegalizer::placeInBlank(MigrationEdge& edge, std::vector<Tile*>& newTile
 void DFSLegalizer::removeIndexFromOverlap(int indexToRemove, Tile* overlapTile){
     if (indexToRemove < mFixedTessNum){
         // should not happen
-        DFSLPrint(0, "Migrating overlap to fixed block: %s\n", mLF->fixedTesserae[indexToRemove]->getName());
+        DFSLPrint(0, "Migrating overlap to fixed block: %s\n", mFP->fixedTesserae[indexToRemove]->getName());
         return;
     }
 
@@ -1264,14 +1262,14 @@ void DFSLegalizer::removeIndexFromOverlap(int indexToRemove, Tile* overlapTile){
         overlapTile->OverlapSoftTesseraeIdx.clear();
         overlapTile->setType(tileType::BLOCK);
 
-        Tessera* otherTess = otherIndex < mFixedTessNum ? mLF->fixedTesserae[otherIndex] : mLF->softTesserae[otherIndex - mFixedTessNum];
+        Tessera* otherTess = otherIndex < mFixedTessNum ? mFP->fixedTesserae[otherIndex] : mFP->softTesserae[otherIndex - mFixedTessNum];
         removeFromVector(overlapTile, otherTess->OverlapArr);
         otherTess->TileArr.push_back(overlapTile);
 
-        removeFromVector(overlapTile, mLF->softTesserae[indexToRemove - mFixedTessNum]->OverlapArr);
+        removeFromVector(overlapTile, mFP->softTesserae[indexToRemove - mFixedTessNum]->OverlapArr);
     }
     else {
-        removeFromVector(overlapTile, mLF->softTesserae[indexToRemove - mFixedTessNum]->OverlapArr);
+        removeFromVector(overlapTile, mFP->softTesserae[indexToRemove - mFixedTessNum]->OverlapArr);
         removeFromVector(indexToRemove - mFixedTessNum, overlapTile->OverlapSoftTesseraeIdx);                                
     }
 }
@@ -1363,7 +1361,7 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
     {
     case EDGETYPE::OB:
     {
-        Tessera* toTess = mLF->softTesserae[edge.toIndex - mFixedTessNum];
+        Tessera* toTess = mFP->softTesserae[edge.toIndex - mFixedTessNum];
         std::set<Tile*> overlap;
         std::set<Tile*> withoutOverlap;
         std::set<Tile*> withOverlap;

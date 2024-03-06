@@ -20,6 +20,13 @@ class ConfigList;
 
 enum class ConfigType : unsigned char { BOOL, INT, UINT, LONG64, ULONG64, DOUBLE, FLOAT, CHAR, STRING };
 
+enum DFSL_PRINTLEVEL : int {
+    DFSL_ERROR    = 0,
+    DFSL_WARNING  = 1,
+    DFSL_STANDARD = 2,
+    DFSL_VERBOSE  = 3
+}; 
+
 class Config {
 private:
     std::any mValue;

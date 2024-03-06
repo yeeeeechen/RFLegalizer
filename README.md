@@ -3,7 +3,7 @@
 Legalization stage of [Soft Block Floorplanner](https://github.com/hankshyu/LocalFloorplanning).
 
 ## Prerequisites
-1. Make sure your `gcc/g++` supports C++17 (C++14 should work too). 
+1. Make sure your `gcc/g++` supports C++17. 
 2. Make sure to download the [Boost library (1.82.0)](https://www.boost.org/users/history/version_1_82_0.html) to somewhere on your machine.
 3. Use `pip3` to install `numpy` and `matplotlib`.
 ```bash
@@ -26,12 +26,6 @@ BOOSTPATH = ./boost_1_82_0    # example
 3. Compile the floorplanner.
 ```bash
 make
-```
-
-4. Create 2 directories:
-```bash
-mkdir outputs
-mkdir log
 ```
 
 ## Usage

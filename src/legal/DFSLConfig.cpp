@@ -51,6 +51,7 @@ void ConfigList::initAllConfigs(){
     newConfig<double>("WWFlatCost"              , ConfigType::DOUBLE,   1000000.0        , ""                                    );
     
     newConfig<bool>  ("ExactAreaMigration"        , ConfigType::BOOL,     false             , "Controls if exact area migration"    ); // see note 1
+    // unused
     newConfig<bool>  ("MigrationAreaLimit"        , ConfigType::BOOL,     false            , ""                                    );
     newConfig<double>("MaxMigrationAreaSingleIter", ConfigType::DOUBLE, 0.01             , ""                                    );
 }

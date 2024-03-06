@@ -5,22 +5,25 @@
 #include <cstdarg>
 #include <vector>
 #include <map>
-#include "LFLegaliser.h"
+// #include "LFLegaliser.h"
+#include "boost/polygon/polygon.hpp"
+#include "fp/floorplan.h"
 #include "DFSLConfig.hpp"
-
-namespace DFSL {
-
-namespace gtl = boost::polygon;
-typedef gtl::rectangle_data<len_t> Rectangle;
-typedef gtl::polygon_90_set_data<len_t> Polygon90Set;
-typedef gtl::polygon_90_with_holes_data<len_t> Polygon90WithHoles;
-typedef gtl::point_data<len_t> Point;
-using namespace boost::polygon::operators;
 
 #define PI 3.14159265358979323846
 #define EPSILON 0.0001
 #define UTIL_RULE 0.8
 #define ASPECT_RATIO_RULE 2.0 
+
+namespace DFSL {
+
+namespace gtl = boost::polygon;
+typedef gtl::rectangle_data<int> Rectangle;
+typedef gtl::polygon_90_set_data<int> Polygon90Set;
+typedef gtl::polygon_90_with_holes_data<int> Polygon90WithHoles;
+typedef gtl::point_data<int> Point;
+using namespace boost::polygon::operators;
+
 
 struct DFSLNode;
 struct DFSLEdge;
@@ -35,13 +38,6 @@ enum class DIRECTION : unsigned char { TOP, RIGHT, DOWN, LEFT, NONE };
 
 enum class RESULT : unsigned char { SUCCESS, OVERLAP_NOT_RESOLVED, CONSTRAINT_FAIL };
 
-enum DFSL_PRINTLEVEL : int {
-    DFSL_ERROR    = 0,
-    DFSL_WARNING  = 1,
-    DFSL_STANDARD = 2,
-    DFSL_VERBOSE  = 3
-}; 
-
 class DFSLegalizer{
 private:
     std::vector<DFSLNode> mAllNodes;
@@ -51,8 +47,7 @@ private:
     std::vector<MigrationEdge> mBestPath;
     std::vector<MigrationEdge> mCurrentPath;
     std::multimap<Tile*, int> mTilePtr2NodeIndex;
-    std::vector<OverlapArea> mTransientOverlapArea;
-    LFLegaliser* mLF;
+    Floorplan* mFP;
     int mFixedTessNum;
     int mSoftTessNum;
     int mOverlapNum;
@@ -83,10 +78,10 @@ public:
     DFSLegalizer();
     ~DFSLegalizer();
     void setOutputLevel(DFSL_PRINTLEVEL level);
-    void initDFSLegalizer(LFLegaliser* floorplan);
+    void initDFSLegalizer(Floorplan* floorplan);
     void constructGraph();
     RESULT legalize(int mode);
-    void DFSLPrint(int level, const char* fmt...);
+    void DFSLPrint(int level, const char* fmt, ...);
     void printFloorplanStats();
     DFSLC::ConfigList config;
 };
@@ -153,12 +148,6 @@ struct LegalInfo {
     // utilization
     int actualArea;
     double util;
-};
-
-struct OverlapArea {
-    int index1;
-    int index2;
-    int area;
 };
 
 }
