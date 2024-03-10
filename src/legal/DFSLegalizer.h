@@ -24,12 +24,11 @@ typedef gtl::polygon_90_with_holes_data<int> Polygon90WithHoles;
 typedef gtl::point_data<int> Point;
 using namespace boost::polygon::operators;
 
-
+union  tileListUnion;
 struct DFSLNode;
 struct DFSLEdge;
 struct Segment;
 struct LegalInfo;
-struct OverlapArea;
 struct MigrationEdge;
 
 enum class DFSLTessType : unsigned char { OVERLAP, FIXED, SOFT, BLANK };
@@ -48,8 +47,8 @@ private:
     std::vector<MigrationEdge> mCurrentPath;
     std::multimap<Tile*, int> mTilePtr2NodeIndex;
     Floorplan* mFP;
-    int mFixedTessNum;
-    int mSoftTessNum;
+    int mFixedModuleNum;
+    int mSoftModuleNum;
     int mOverlapNum;
     int mBlankNum;
     
@@ -57,7 +56,7 @@ private:
     void addOverlapInfo(Tile* tile);
     void addSingleOverlapInfo(Tile* tile, int overlapIdx1, int overlapIdx2);
     void getTessNeighbors(int nodeId, std::set<int>& allNeighbors);
-    void addBlockNode(Tessera* tess, bool isFixed);
+    void addBlockNode(Rectilinear* tess, bool isFixed);
     std::string toOverlapName(int tessIndex1, int tessIndex2);
 
     // DFS path finding
@@ -105,6 +104,7 @@ Segment FindNearestOverlappingInterval(Segment& seg, Polygon90Set& poly);
 
 struct DFSLNode {
     DFSLNode();
+    tileListUnion tileListPtr;
     std::vector<Tile*> tileList; 
     std::vector<DFSLEdge> edgeList;
     std::set<int> overlaps;
@@ -148,6 +148,13 @@ struct LegalInfo {
     // utilization
     int actualArea;
     double util;
+};
+
+union tileListUnion
+{
+    std::unordered_set<Tile *>* blockSet;
+    std::vector<Tile *>* overlapSet;
+    Tile* blankTile;
 };
 
 }
