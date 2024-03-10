@@ -6,7 +6,9 @@ ar=$5
 legal_mode=2
 legal_strat=0
 
-maxOverlap=3
+conf_path="./configs/test.conf"
+
+maxOverlap=2.5
 
 GFP_BIN_PATH="../Global_Floorplanning"
 GFP_RESULTS_PATH="./records/global"
@@ -32,8 +34,10 @@ for ((i = 0; i <= $3; i++)); do
     if (( $(echo $overlap $maxOverlap | awk '{if ($1 < $2) print 1;}') ))
     then 
         echo "Legalizing"
-        ./legal -i ${GFP_OUTPUT_PATH} -o ${LEGAL_RESULTS_PATH} -c ${1} -m ${legal_mode} -s ${legal_strat} \
+        ./legal -i ${GFP_OUTPUT_PATH} -o ${LEGAL_RESULTS_PATH} -f ${1} -m ${legal_mode} -s ${legal_strat} \
         | tee ${LEGAL_LOG_PATH}
+        # ./legal -i ${GFP_OUTPUT_PATH} -o ${LEGAL_RESULTS_PATH} -f ${1} -m ${legal_mode} -c ${conf_path} \
+        # | tee ${LEGAL_LOG_PATH}
     else 
         echo "Overlap too high, skipping"
         echo TOOMUCHOVERLAP > ${LEGAL_LOG_PATH}

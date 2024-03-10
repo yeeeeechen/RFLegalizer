@@ -412,8 +412,8 @@ RESULT DFSLegalizer::legalize(int mode){
     int iteration = 0;
     std::srand(69);
     
-    // struct timespec start, end;
-    // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+    struct timespec start, end;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
     
     DFSLPrint(2, "Starting Legalization\n");
     while (1) {
@@ -520,17 +520,18 @@ RESULT DFSLegalizer::legalize(int mode){
                 resolvableOverlaps--;
             }
             
+            
+            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+            if (end.tv_sec - start.tv_sec > 3*60){
+                DFSLPrint(0, "Timeout\n");
+                result = RESULT::OVERLAP_NOT_RESOLVED;
+                return result;
+            }
         }
 
         constructGraph();
         iteration++;
         
-        // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-        // if (end.tv_sec - start.tv_sec > 2*60){
-        //     DFSLPrint(0, "Timeout\n");
-        //     result = RESULT::OVERLAP_NOT_RESOLVED;
-        //     return result;
-        // }
     }
 
     // mLF->visualiseArtpiece("debug_DFSL_result.txt", true);

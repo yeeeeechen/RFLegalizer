@@ -234,7 +234,6 @@ len_t LFLegaliser::getCanvasHeight() const {
 
 bool LFLegaliser::initFromGlobalFile(std::string path){
     // format: same as global floorplanning: currentPosition2txt()
-    // todo: add connection inputs
     std::ifstream fin(path, std::ifstream::in);
     if (!fin.is_open()){
         std::cerr << "Input \"" << path << "\" not opened " << std::endl;
