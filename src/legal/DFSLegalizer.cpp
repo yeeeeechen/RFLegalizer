@@ -65,26 +65,26 @@ void DFSLegalizer::constructGraph(){
     mSoftTessNum = mFP->getSoftRectilinearCount();
 
     // find fixed and soft tess
-    for(int t = 0; t < mFP->fixedTesserae.size(); t++){
-        Tessera* tess = mFP->fixedTesserae[t];
+    for(int t = 0; t < mFixedTessNum; t++){
+        Rectilinear* rect = mFP->fixedTesserae[t];
         addBlockNode(tess, true);
     }
 
-    for(int t = 0; t < mFP->softTesserae.size(); t++){
-        Tessera* tess = mFP->softTesserae[t];
+    for(int t = 0; t < mSoftTessNum; t++){
+        Rectilinear* rect = mFP->softTesserae[t];
         addBlockNode(tess, false);
     }
 
     // find overlaps 
-    for(int t = 0; t < mFP->fixedTesserae.size(); t++){
-        Tessera* tess = mFP->fixedTesserae[t];
+    for(int t = 0; t < mFixedTessNum); t++){
+        Rectilinear* rect = mFP->fixedTesserae[t];
         for(Tile* overlap : tess->OverlapArr){
             addOverlapInfo(overlap);
         }
     }
 
-    for(int t = 0; t < mFP->softTesserae.size(); t++){
-        Tessera* tess = mFP->softTesserae[t];
+    for(int t = 0; t < mSoftTessNum; t++){
+        Rectilinear* rect = mFP->softTesserae[t];
         for(Tile* overlap : tess->OverlapArr){
             addOverlapInfo(overlap);
         }
