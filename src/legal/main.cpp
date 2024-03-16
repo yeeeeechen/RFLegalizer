@@ -14,14 +14,12 @@
 
 
 int main(int argc, char *argv[]) {
-    int legalStrategy = 0;
     int legalMode = 0;
     std::string inputFilePath = "";
     std::string casename = "";
     std::string outputDir = "./outputs";
-    std::string configFilePath = "";
+    std::string configFilePath = "./configs/default.conf";
     bool verbose = false;
-    bool useCustomConf = false;
     
     // print current time and date
     const char* cyanText = "\u001b[36m";
@@ -38,7 +36,7 @@ int main(int argc, char *argv[]) {
     while((cmd_opt = getopt(argc, argv, ":hi:o:f:c:m:s:v")) != -1) {
         switch (cmd_opt) {
         case 'h':
-            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-f <floorplan name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>] [-c <custom .conf file>] [-v]\n";
+            std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-f <floorplan name>] [-m <legalization mode 0-3>] [-c <custom .conf file>] [-v]\n";
             std::cout << "\tNote: If a custom config file (-c) is provided, then the -s option will be ignored.\n";
             return 0;
         case 'i':
@@ -53,12 +51,8 @@ int main(int argc, char *argv[]) {
         case 'm':
             legalMode = std::stoi(optarg);
             break;
-        case 's':
-            legalStrategy = std::stoi(optarg);
-            break;
         case 'c':
             configFilePath = optarg;
-            useCustomConf = true;
             break;
         case 'v':
             verbose = true;
@@ -81,7 +75,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (inputFilePath == ""){
-        std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-f <floorplan name>] [-m <legalization mode 0-3>] [-s <legalization strategy 0-4>] [-c <custom .conf file>]\n";
+        std::cout << "Usage: " << argv[0] << " [-h] [-i <input file>] [-o <output directory>] [-f <floorplan name>] [-m <legalization mode 0-3>] [-c <custom .conf file>]\n";
         std::cerr << "Where is your input file?🤨🤨🤨\n";
         return 1;
     }    
@@ -110,12 +104,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Output directory: " << outputDir << '\n';
     std::cout << "Case Name: " << casename << '\n';
     std::cout << "Legalization mode: " << legalMode << '\n';
-    if (useCustomConf){
-        std::cout << "Reading Configs from: " << configFilePath << '\n';
-    }
-    else {
-        std::cout << "Legalization strategy: " << legalStrategy << '\n';
-    }
+    std::cout << "Reading Configs from: " << configFilePath << '\n';
     std::cout << std::endl;
 
     // Start measuring CPU time
@@ -128,8 +117,8 @@ int main(int argc, char *argv[]) {
     legaliser = new LFLegaliser((len_t) 1000, (len_t) 1000);
 
     std::cout << "Reading input from " + inputFilePath + "...\n";
-    bool success = legaliser->initFromGlobalFile(inputFilePath);
-    if (!success){
+    bool initSuccess = legaliser->initFromGlobalFile(inputFilePath);
+    if (!initSuccess){
         return 1;
     }
     legaliser->detectfloorplanningOverlaps();
@@ -173,37 +162,10 @@ int main(int argc, char *argv[]) {
     dfsl.config.setConfigValue<bool>("ExactAreaMigration", true);
 
     // read config file 
-    if (useCustomConf){
-        bool success = dfsl.config.readConfigFile(configFilePath);
-        if (!success){
-            std::cerr << "Error opening configs\n";
-            return 0;
-        }
-    }
-    else { if (legalStrategy == 1){
-            // prioritize area 
-            std::cout << "legalStrategy = 1, prioritizing area\n";
-            dfsl.config.readConfigFile("configs/strategy1.conf");
-        }
-        else if (legalStrategy == 2){
-            // prioritize util
-            std::cout << "legalStrategy = 2, prioritizing utilization\n";
-            dfsl.config.readConfigFile("configs/strategy2.conf");
-        }
-        else if (legalStrategy == 3){
-            // prioritize aspect ratio
-            std::cout << "legalStrategy = 3, prioritizing aspect ratio\n";
-            dfsl.config.readConfigFile("configs/strategy3.conf");
-        }
-        else if (legalStrategy == 4){
-            // favor block -> block flow more
-            std::cout << "legalStrategy = 4, prioritizing block -> block flow\n";
-            dfsl.config.readConfigFile("configs/strategy4.conf");
-        }
-        else {
-            std::cout << "legalStrategy = 0, using default configs\n";
-            // default configs
-        }
+    bool confSuccess = dfsl.config.readConfigFile(configFilePath);
+    if (!confSuccess){
+        std::cerr << "Error opening configs\n";
+        return 0;
     }
 
     // set verbose

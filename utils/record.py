@@ -1,7 +1,6 @@
 import sys
 import csv
 import os
-import re
 
 case_name = sys.argv[1]
 global_log_path = sys.argv[2]
@@ -12,7 +11,7 @@ if not os.path.exists(csv_path):
     with open(csv_path, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["punishment", "overlap ratio", "HPWL (Global)", 
-                        "Legal mode", "Legal strategy", "HPWL (legal)", "Vio #"])
+                        "Legal mode", "Config", "HPWL (legal)", "Vio #"])
 
 # extract punishment, overlap ratio, global hpwl
 with open(global_log_path, 'r') as global_log:
@@ -26,13 +25,7 @@ with open(global_log_path, 'r') as global_log:
         if "Estimated HPWL" in line:
             global_hpwl = float(line.split()[-1])
 
-# extract digits from log file
-s_list = re.findall(r"s\d+", legal_log_path)
-strategy = s_list[-1][1:]
-m_list = re.findall(r"m\d+", legal_log_path)
-mode = m_list[-1][1:]
-
-# extract hpwl and violation number
+# extract hpwl and violation number, legalization mode, config
 with open(legal_log_path, 'r') as legal_log:
     line = legal_log.readline()
     while line:
@@ -40,6 +33,10 @@ with open(legal_log_path, 'r') as legal_log:
             legal_hpwl = -1
             violations = -1
             break
+        elif "Legalization mode:" in line:
+            mode = int(line.split()[-1])
+        elif "Reading Configs from:" in line:
+            configFile = line.split()[-1]
         elif "Total Violations:" in line:
             violations = int(line.split()[-1])
         elif "Best hpwl =" in line:
@@ -48,4 +45,4 @@ with open(legal_log_path, 'r') as legal_log:
 
 with open(csv_path, 'a', newline='') as file:
     writer = csv.writer(file)
-    writer.writerow([punishment, overlap_ratio, global_hpwl, mode, strategy, legal_hpwl, violations])
+    writer.writerow([punishment, overlap_ratio, global_hpwl, mode, configFile, legal_hpwl, violations])

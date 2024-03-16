@@ -4,9 +4,8 @@ max=$4
 ar=$5
 
 legal_mode=2
-legal_strat=0
 
-conf_path="./configs/test.conf"
+conf_path="./configs/default.conf"
 
 maxOverlap=2.5
 
@@ -18,7 +17,7 @@ CSV_DIR_PATH="./records/csv"
 INPUT_PATH=${GFP_BIN_PATH}/inputs/${1}-input.txt
 GFP_LOG_PATH=${GFP_RESULTS_PATH}/${1}_global.log
 GFP_OUTPUT_PATH=${GFP_RESULTS_PATH}/${1}.txt
-LEGAL_LOG_PATH=${LEGAL_RESULTS_PATH}/${1}_legal_s${legal_strat}_m${legal_mode}.log
+LEGAL_LOG_PATH=${LEGAL_RESULTS_PATH}/${1}_legal.log
 CSV_PATH=${CSV_DIR_PATH}/${1}.csv
 
 mkdir -p ${GFP_RESULTS_PATH} ${LEGAL_RESULTS_PATH} ${CSV_DIR_PATH}
@@ -34,10 +33,8 @@ for ((i = 0; i <= $3; i++)); do
     if (( $(echo $overlap $maxOverlap | awk '{if ($1 < $2) print 1;}') ))
     then 
         echo "Legalizing"
-        ./legal -i ${GFP_OUTPUT_PATH} -o ${LEGAL_RESULTS_PATH} -f ${1} -m ${legal_mode} -s ${legal_strat} \
+        ./legal -i ${GFP_OUTPUT_PATH} -o ${LEGAL_RESULTS_PATH} -f ${1} -m ${legal_mode} -c ${conf_path} \
         | tee ${LEGAL_LOG_PATH}
-        # ./legal -i ${GFP_OUTPUT_PATH} -o ${LEGAL_RESULTS_PATH} -f ${1} -m ${legal_mode} -c ${conf_path} \
-        # | tee ${LEGAL_LOG_PATH}
     else 
         echo "Overlap too high, skipping"
         echo TOOMUCHOVERLAP > ${LEGAL_LOG_PATH}
@@ -45,3 +42,5 @@ for ((i = 0; i <= $3; i++)); do
     echo "-------------------------------------------------"
     python3 utils/record.py ${1} ${GFP_LOG_PATH} ${LEGAL_LOG_PATH} ${CSV_PATH}
 done
+
+# ./fulltest.sh case01 0.005 50 0.105 1.9 
