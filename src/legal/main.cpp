@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
     dfsl.initDFSLegalizer(legaliser);
 
     // SETTING configs:
-    dfsl.config.setConfigValue<bool>("ExactAreaMigration", true);
+    // dfsl.config.setConfigValue<bool>("ExactAreaMigration", true);
 
     // read config file 
     bool confSuccess = dfsl.config.readConfigFile(configFilePath);
