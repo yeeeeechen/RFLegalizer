@@ -20,4 +20,7 @@ with open(csv_path, 'r') as file:
             lowest_hpwl = final_hpwl
 
 print("Lowest hpwl: {}".format(lowest_hpwl))
+print("Best Punishment: {}".format(bestDict["punishment"]))
+print("Legal Mode: {}".format(bestDict["Legal mode"]))
+print("Config: {}".format(bestDict["Config"]))
 print(bestDict)

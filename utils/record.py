@@ -28,6 +28,8 @@ with open(global_log_path, 'r') as global_log:
 # extract hpwl and violation number, legalization mode, config
 with open(legal_log_path, 'r') as legal_log:
     line = legal_log.readline()
+    mode = -1
+    configFile = ""
     while line:
         if "TOOMUCHOVERLAP" in line or "Impossible to solve" in line:
             legal_hpwl = -1
