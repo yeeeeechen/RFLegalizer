@@ -1,17 +1,16 @@
 make
 
-if [ "$#" -ne 3 ]; then
-    strategy=0
-    mode=0
-else
-    strategy=$2
-    mode=$3
-fi
-
 mkdir -p log outputs
+if [ "$#" -ne 3 ]; then
+    args="-i inputs/${1}.txt"
+else
+    conf=$2
+    mode=$3
 
-echo "Command: ./legal inputs/${1}.txt $strategy $mode | tee log/${1}.log"
-./legal -i inputs/${1}.txt -f ${1} -s $strategy -m $mode | tee log/${1}.log
+    args="-i inputs/${1}.txt -c $conf -m $mode"
+fi
+echo "Command: ./legal ${args}"
+./legal ${args} | tee log/${1}.log
 
 echo 
 echo "Drawing output:"

@@ -9,6 +9,8 @@
 #include "boost/polygon/polygon.hpp"
 #include "fp/floorplan.h"
 #include "DFSLConfig.hpp"
+#include "DFSLNode.h"
+#include "DFSLEdge.h"
 
 #define PI 3.14159265358979323846
 #define EPSILON 0.0001
@@ -24,16 +26,8 @@ typedef gtl::polygon_90_with_holes_data<int> Polygon90WithHoles;
 typedef gtl::point_data<int> Point;
 using namespace boost::polygon::operators;
 
-union  tileListUnion;
-struct DFSLNode;
-struct DFSLEdge;
-struct Segment;
 struct LegalInfo;
 struct MigrationEdge;
-
-enum class DFSLTessType : unsigned char { OVERLAP, FIXED, SOFT, BLANK };
-
-enum class DIRECTION : unsigned char { TOP, RIGHT, DOWN, LEFT, NONE };
 
 enum class RESULT : unsigned char { SUCCESS, OVERLAP_NOT_RESOLVED, CONSTRAINT_FAIL };
 
@@ -55,16 +49,17 @@ private:
     // initialize related functions
     void addOverlapInfo(Tile* tile);
     void addSingleOverlapInfo(Tile* tile, int overlapIdx1, int overlapIdx2);
-    void getTessNeighbors(int nodeId, std::set<int>& allNeighbors);
+    // void getSoftNeighbors(int nodeId, std::set<int>& allNeighbors);
+    void getSoftNeighbors(int nodeId);
     void addBlockNode(Rectilinear* tess, bool isFixed);
+    void findOBEdge(int fromIndex, int toIndex);
+    void findEdge(int fromIndex, int toIndex);
     std::string toOverlapName(int tessIndex1, int tessIndex2);
 
     // DFS path finding
     bool migrateOverlap(int overlapIndex);
     void dfs(DFSLEdge& edge, double currentCost);
     MigrationEdge getEdgeCost(DFSLEdge& edge);
-    void DFSLTraverseBlank(Tile* tile, std::vector <Cord> &record);
-    void findEdge(int fromIndex, int toIndex);
     Rectangle getRectFromEdge(MigrationEdge& edge, bool findRemainder, Rectangle& remainderRect, bool useCeil);
 
     // functions that change physical layout
@@ -76,13 +71,22 @@ private:
 public:
     DFSLegalizer();
     ~DFSLegalizer();
-    void setOutputLevel(DFSL_PRINTLEVEL level);
+
+    int getSoftBegin();
+    int getSoftEnd();
+    int getFixedBegin();
+    int getFixedEnd();
+    int getOverlapBegin();
+    int getOverlapEnd();
+    
+
+    void setOutputLevel(int level);
     void initDFSLegalizer(Floorplan* floorplan);
     void constructGraph();
     RESULT legalize(int mode);
     void DFSLPrint(int level, const char* fmt, ...);
     void printFloorplanStats();
-    DFSLC::ConfigList config;
+    ConfigList config;
 };
 
 bool removeFromVector(int a, std::vector<int>& vec);
@@ -101,31 +105,6 @@ void TileVec2PolySet(std::vector<Tile*>& tileVec, Polygon90Set& polySet);
 // in the direction of seg.direction,
 // find the segment in poly of the same orientation that has the shortest distance
 Segment FindNearestOverlappingInterval(Segment& seg, Polygon90Set& poly);
-
-struct DFSLNode {
-    DFSLNode();
-    tileListUnion tileListPtr;
-    std::vector<Tile*> tileList; 
-    std::vector<DFSLEdge> edgeList;
-    std::set<int> overlaps;
-    std::string nodeName;
-    DFSLTessType nodeType;
-    int area;
-    int index;
-};
-
-// note: use ONLY on vertical and horizontal segments 
-struct Segment {
-    Cord segStart;
-    Cord segEnd;
-    DIRECTION direction; // direction of the normal vector of this segment
-};
-
-struct DFSLEdge {
-    int fromIndex;
-    int toIndex; 
-    std::vector<Segment> tangentSegments;
-};
 
 struct MigrationEdge {
     int fromIndex;
@@ -148,13 +127,6 @@ struct LegalInfo {
     // utilization
     int actualArea;
     double util;
-};
-
-union tileListUnion
-{
-    std::unordered_set<Tile *>* blockSet;
-    std::vector<Tile *>* overlapSet;
-    Tile* blankTile;
 };
 
 }

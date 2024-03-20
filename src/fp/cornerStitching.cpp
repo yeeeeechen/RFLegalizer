@@ -626,6 +626,57 @@ void CornerStitching::findAllNeighbors(Tile *centre, std::vector<Tile *> &neighb
 	findRightNeighbors(centre, neighbors);
 }
 
+// ADDED BY RYAN
+void CornerStitching::findTopNeighborsSet(Tile *centre, std::set<Tile *> &neighbors) const{
+	if(centre == nullptr) return;
+	if(centre->rt == nullptr) return;
+
+	Tile *n = centre->rt;
+	while(n->getXLow() > centre->getXLow()){
+	
+		neighbors.insert(n);
+		n = n->bl;
+	}
+	neighbors.insert(n);
+}
+
+void CornerStitching::findDownNeighborsSet(Tile *centre, std::set<Tile *> &neighbors) const{
+	if(centre == nullptr) return;
+	if(centre->lb == nullptr) return;
+
+	Tile *n = centre->lb;
+	while(n->getXHigh() < centre->getXHigh()){
+		neighbors.insert(n);
+		n = n->tr;
+	}
+	neighbors.insert(n);
+}
+
+void CornerStitching::findLeftNeighborsSet(Tile *centre, std::set<Tile *> &neighbors) const{
+	if(centre == nullptr) return;
+	if(centre->bl == nullptr) return;
+
+	Tile *n = centre->bl;
+	while(n->getYHigh() < centre->getYHigh()){
+		neighbors.insert(n);
+		n = n->rt;
+	}
+	neighbors.insert(n);
+}
+
+void CornerStitching::findRightNeighborsSet(Tile *centre, std::set<Tile *> &neighbors) const{
+	if(centre == nullptr) return;
+	if(centre->tr == nullptr) return;
+
+	Tile *n = centre->tr;
+	// the last neighbor is the first tile encountered whose lower y cord <= lower y cord of starting tile
+	while(n->getYLow() > centre->getYLow()){
+		neighbors.insert(n);
+		n = n->lb;
+	}
+	neighbors.insert(n);
+}
+
 bool CornerStitching::searchArea(Rectangle box) const{
 
 	if(!checkRectangleInCanvas(box)){

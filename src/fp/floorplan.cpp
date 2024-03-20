@@ -117,12 +117,16 @@ Rectilinear *Floorplan::placeRectilinear(std::string name, rectilinearType type,
     return newRect;
 }
 
+// modified by ryan: 
+// added mIDCounter(0)
 Floorplan::Floorplan()
-    : mChipContour(Rectangle(0, 0, 0, 0)) , mAllRectilinearCount(0), mSoftRectilinearCount(0), mPreplacedRectilinearCount(0), mConnectionCount(0) {
+    : mChipContour(Rectangle(0, 0, 0, 0)) , mAllRectilinearCount(0), mSoftRectilinearCount(0), mPreplacedRectilinearCount(0), mConnectionCount(0), mIDCounter(0) {
 }
 
+// modified by ryan: 
+// added mIDCounter(0)
 Floorplan::Floorplan(GlobalResult gr, double aspectRatioMin, double aspectRatioMax, double utilizationMin)
-    : mGlobalAspectRatioMin(aspectRatioMin), mGlobalAspectRatioMax(aspectRatioMax), mGlobalUtilizationMin(utilizationMin) {
+    : mGlobalAspectRatioMin(aspectRatioMin), mGlobalAspectRatioMax(aspectRatioMax), mGlobalUtilizationMin(utilizationMin), mIDCounter(0) {
 
     mChipContour = Rectangle(0, 0, gr.chipWidth, gr.chipHeight);
     mAllRectilinearCount = gr.blockCount;
@@ -171,6 +175,8 @@ Floorplan::Floorplan(GlobalResult gr, double aspectRatioMin, double aspectRatioM
 }
 
 Floorplan::Floorplan(const Floorplan &other){
+    // added by ryan
+    this->mIDCounter = other.mIDCounter;
 
     // copy basic attributes
     this->mChipContour = Rectangle(other.mChipContour);

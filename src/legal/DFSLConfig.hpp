@@ -12,7 +12,7 @@
 // 1. myConfigList.getConfig("ConfigName").getValue<Type>()
 // 2. myConfigList.getConfigValue<Type>("ConfigName")
 
-namespace DFSLC {
+namespace DFSL {
 
 class Config;
 class ConfigList;

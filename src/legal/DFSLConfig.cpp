@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace DFSLC {
+namespace DFSL {
 
 void Config::resetDefault(){
     if (mIsDefault) {

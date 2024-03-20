@@ -52,6 +52,13 @@ public:
     // Short hand for continuoutsly call, find Top, Left, Down, Right neighbors
     void findAllNeighbors(Tile *centre, std::vector<Tile *> &neighbors) const;
 
+    //ADDED BY RYAN
+    void findTopNeighborsSet(Tile *centre, std::set<Tile *> &neighbors) const;
+    void findDownNeighborsSet(Tile *centre, std::set<Tile *> &neighbors) const;
+    void findLeftNeighborsSet(Tile *centre, std::set<Tile *> &neighbors) const;
+    void findRightNeighborsSet(Tile *centre, std::set<Tile *> &neighbors) const;
+    
+
     // Determine if there is any nonblank tiles in the box area
     bool searchArea(Rectangle box) const;
     // Determine if there is any nonblank tiles in the box area, return any tile in the region if found (via pointer)
