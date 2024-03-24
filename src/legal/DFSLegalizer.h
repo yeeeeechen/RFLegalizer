@@ -105,6 +105,7 @@ void TileVec2PolySet(std::vector<Tile*>& tileVec, Polygon90Set& polySet);
 // in the direction of seg.direction,
 // find the segment in poly of the same orientation that has the shortest distance
 Segment FindNearestOverlappingInterval(Segment& seg, Polygon90Set& poly);
+Segment findTangentSegment(Tile* from, Tile* to, int direction);
 
 struct MigrationEdge {
     int fromIndex;

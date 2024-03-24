@@ -10,6 +10,8 @@ enum class DIRECTION : unsigned char { TOP, RIGHT, DOWN, LEFT, NONE };
 
 // note: use ONLY on vertical and horizontal segments 
 struct Segment {
+    Segment(Cord start, Cord end, DIRECTION dir);
+    Segment();
     Cord segStart;
     Cord segEnd;
     DIRECTION direction; // direction of the normal vector of this segment

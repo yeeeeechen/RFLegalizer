@@ -130,12 +130,7 @@ void DFSLegalizer::constructGraph(){
     int softEndIndex = getSoftEnd();
     for (int from = softStartIndex; from < softEndIndex; from++){
         std::set<int> allNeighbors;
-        getSoftNeighbors(from, allNeighbors);
-        for (int to: allNeighbors){
-            if (softStartIndex <= to && to < softEndIndex){
-                findBBEdge(from, to);
-            }
-        }
+        getSoftNeighbors(from);
     }
 }
 
@@ -204,19 +199,19 @@ void DFSLegalizer::findOBEdge(int fromIndex, int toIndex){
         // find Top, right, bottom, left neighbros
         std::vector<Segment> currentSegment;
         for (Tile* tile: fromNode.getOverlapTileList()){
-            std::set<Tile*> neighbors;
+            std::vector<Tile*> neighbors;
             switch (dir) {
             case 0:
-                mFP->cs->findTopNeighborsSet(tile, neighbors);
+                mFP->cs->findTopNeighbors(tile, neighbors);
                 break;
             case 1:
-                mFP->cs->findRightNeighborsSet(tile, neighbors);
+                mFP->cs->findRightNeighbors(tile, neighbors);
                 break;
             case 2:
-                mFP->cs->findDownNeighborsSet(tile, neighbors);
+                mFP->cs->findDownNeighbors(tile, neighbors);
                 break;
             case 3:
-                mFP->cs->findLeftNeighborsSet(tile, neighbors);
+                mFP->cs->findLeftNeighbors(tile, neighbors);
                 break;
             }
             
@@ -226,44 +221,7 @@ void DFSLegalizer::findOBEdge(int fromIndex, int toIndex){
                 }
                 int nodeIndex = mFP->blockTilePayload[neighbor]->getId();
                 if (nodeIndex == toIndex){
-                    // find tangent
-                    Segment tangent;
-                    Cord fromStart, fromEnd, toStart, toEnd;
-                    if (dir == 0){
-                        // neighbor on top of fromNode 
-                        fromStart = tile->getUpperLeft();
-                        fromEnd = tile->getUpperRight();
-                        toStart = neighbor->getLowerLeft(); 
-                        toEnd = neighbor->getLowerRight();
-                        tangent.direction = DIRECTION::TOP;
-                    }
-                    else if (dir == 1){
-                        // neighbor is right of fromNode 
-                        fromStart = tile->getLowerRight();
-                        fromEnd = tile->getUpperRight();
-                        toStart = neighbor->getLowerLeft(); 
-                        toEnd = neighbor->getUpperLeft();
-                        tangent.direction = DIRECTION::RIGHT;
-                    }
-                    else if (dir == 2){
-                        // neighbor is bottom of fromNode 
-                        fromStart = tile->getLowerLeft();
-                        fromEnd = tile->getLowerRight();
-                        toStart = neighbor->getUpperLeft(); 
-                        toEnd = neighbor->getUpperRight();
-                        tangent.direction = DIRECTION::DOWN;
-                    }
-                    else {
-                        // neighbor is left of fromNode 
-                        fromStart = tile->getLowerLeft();
-                        fromEnd = tile->getUpperLeft();
-                        toStart = neighbor->getLowerRight(); 
-                        toEnd = neighbor->getUpperRight();
-                        tangent.direction = DIRECTION::LEFT;
-                    }
-                    tangent.segStart = fromStart <= toStart ? toStart : fromStart;
-                    tangent.segEnd = fromEnd <= toEnd ? fromEnd : toEnd;
-                    currentSegment.push_back(tangent);
+                    currentSegment.push_back(findTangentSegment(tile, neighbor, dir));
                 }
             }
         }
@@ -338,30 +296,33 @@ void DFSLegalizer::getSoftNeighbors(int fromId){
         return;
     }
 
-    std::vector<Segment> allTangentSegments;
+    // <nodeindex, tangentsegments>, stores all the tangent segments 
+    // correpsonding to each neighboring node
+    std::map<int,std::vector<Segment>> allTangentSegments;
     for (int dir = 0; dir < 4; dir++){
         // find Top, right, bottom, left neighbros
         std::vector<Segment> currentSegment;
+        std::vector<int> segmentIsWhichNeighbor;
         for (Tile* tile: fromNode.getBlockTileList()){
-            std::set<Tile*> neighbors;
+            std::vector<Tile*> neighbors;
             switch (dir) {
             case 0:
-                mFP->cs->findTopNeighborsSet(tile, neighbors);
+                mFP->cs->findTopNeighbors(tile, neighbors);
                 break;
             case 1:
-                mFP->cs->findRightNeighborsSet(tile, neighbors);
+                mFP->cs->findRightNeighbors(tile, neighbors);
                 break;
             case 2:
-                mFP->cs->findDownNeighborsSet(tile, neighbors);
+                mFP->cs->findDownNeighbors(tile, neighbors);
                 break;
             case 3:
-                mFP->cs->findLeftNeighborsSet(tile, neighbors);
+                mFP->cs->findLeftNeighbors(tile, neighbors);
                 break;
             }
             
             for (Tile* neighbor: neighbors){
                 // skip if neighbor is not block or whitespace
-                if (!(neighbor->getType() == tileType::BLOCK) || !(neighbor->getType() == tileType::BLANK)){
+                if (neighbor->getType() != tileType::BLOCK || neighbor->getType() != tileType::BLANK){
                     continue;
                 }
 
@@ -377,50 +338,12 @@ void DFSLegalizer::getSoftNeighbors(int fromId){
                     }
                 }
 
-                // find tangent
-                Segment tangent;
-                Cord fromStart, fromEnd, toStart, toEnd;
-                if (dir == 0){
-                    // neighbor on top of fromNode 
-                    fromStart = tile->getUpperLeft();
-                    fromEnd = tile->getUpperRight();
-                    toStart = neighbor->getLowerLeft(); 
-                    toEnd = neighbor->getLowerRight();
-                    tangent.direction = DIRECTION::TOP;
-                }
-                else if (dir == 1){
-                    // neighbor is right of fromNode 
-                    fromStart = tile->getLowerRight();
-                    fromEnd = tile->getUpperRight();
-                    toStart = neighbor->getLowerLeft(); 
-                    toEnd = neighbor->getUpperLeft();
-                    tangent.direction = DIRECTION::RIGHT;
-                }
-                else if (dir == 2){
-                    // neighbor is bottom of fromNode 
-                    fromStart = tile->getLowerLeft();
-                    fromEnd = tile->getLowerRight();
-                    toStart = neighbor->getUpperLeft(); 
-                    toEnd = neighbor->getUpperRight();
-                    tangent.direction = DIRECTION::DOWN;
-                }
-                else {
-                    // neighbor is left of fromNode 
-                    fromStart = tile->getLowerLeft();
-                    fromEnd = tile->getUpperLeft();
-                    toStart = neighbor->getLowerRight(); 
-                    toEnd = neighbor->getUpperRight();
-                    tangent.direction = DIRECTION::LEFT;
-                }
-                tangent.segStart = fromStart <= toStart ? toStart : fromStart;
-                tangent.segEnd = fromEnd <= toEnd ? fromEnd : toEnd;
-                currentSegment.push_back(tangent);
-
+                currentSegment.push_back(findTangentSegment(tile, neighbor, dir));
+                segmentIsWhichNeighbor.push_back(nodeIndex);
             }
         }
         
         // check segment, splice touching segments together and add to allTangentSegments
-        int segLength = 0;
         if (currentSegment.size() > 0){
             if (dir == 0 || dir == 2){
                 std::sort(currentSegment.begin(), currentSegment.end(), compareXSegment);
@@ -430,35 +353,53 @@ void DFSLegalizer::getSoftNeighbors(int fromId){
             }
             Cord& segBegin = currentSegment.front().segStart;
             for (int j = 1; j < currentSegment.size(); j++){
-                if (currentSegment[j].segStart != currentSegment[j-1].segEnd){
+                // iterate through segments, if a segment has
+                // 1. different endpoint than the last segment, or
+                // 2. points to different neighbor
+                // then splice all stored segments into one segment
+                if (currentSegment[j].segStart != currentSegment[j-1].segEnd || segmentIsWhichNeighbor[j] != segmentIsWhichNeighbor[j-1]){
+                    int neighborIndex = segmentIsWhichNeighbor[j-1];
                     Cord segEnd = currentSegment[j-1].segEnd;
-                    Segment splicedSegment;
-                    splicedSegment.segStart = segBegin;
-                    splicedSegment.segEnd = segEnd;
-                    splicedSegment.direction = currentSegment[j-1].direction;
-                    allTangentSegments.push_back(splicedSegment);
-                    segLength += (segEnd.x() - segBegin.x()) + (segEnd.y() - segBegin.y());  
+                    Segment splicedSegment(segBegin, segEnd, currentSegment[j-1].direction);
+
+                    // neighbor exists in allTangentSegments 
+                    if (allTangentSegments.count(neighborIndex) == 1){
+                        std::vector<Segment>& neighborTangents = allTangentSegments[neighborIndex];
+                        neighborTangents.emplace_back(splicedSegment);
+                    }
+                    // neighbor does not exists in allTangentSegments yet
+                    // insert at key neighborIndex a vector with size 1 that has spliced segment
+                    else {
+                        allTangentSegments.emplace(neighborIndex, 1, splicedSegment);
+                    }
 
                     segBegin = currentSegment[j].segStart;
                 }
             }
             Cord segEnd = currentSegment.back().segEnd;
-            Segment splicedSegment;
-            splicedSegment.segStart = segBegin;
-            splicedSegment.segEnd = segEnd;
-            splicedSegment.direction = currentSegment.back().direction;
-            allTangentSegments.push_back(splicedSegment);
-            segLength += (segEnd.x() - segBegin.x()) + (segEnd.y() - segBegin.y());  
+            Segment splicedSegment(segBegin, segEnd, currentSegment.back().direction);
+            int neighborIndex = segmentIsWhichNeighbor.back();
+
+            if (allTangentSegments.count(neighborIndex) == 1){
+                std::vector<Segment>& neighborTangents = allTangentSegments[neighborIndex];
+                neighborTangents.emplace_back(splicedSegment);
+            }
+            else {
+                allTangentSegments.emplace(neighborIndex, 1, splicedSegment);
+            }
         }
     }
 
     // construct edge in graph
-    mAllNodes[fromIndex].edgeList.emplace_back(fromIndex, toIndex, allTangentSegments);
+    for (auto iter: allTangentSegments){
+        int neighborIndex = iter.first;
+        fromNode.edgeList.emplace_back(fromId, neighborIndex, iter.second);
+    }
 }
 
 void DFSLegalizer::printFloorplanStats(){
     DFSLPrint(2, "Remaining overlaps: %d\n", mOverlapNum);
-    long overlapArea = 0, physicalArea = 0, dieArea = mFP->getCanvasWidth() * mFP->getCanvasHeight();
+    long overlapArea = 0, physicalArea = 0, dieArea = gtl::area(mFP->getChipContour());
     int overlapStart = mFixedModuleNum + mSoftModuleNum;
     int overlapEnd = overlapStart + mOverlapNum;
     for (int i = overlapStart; i < overlapEnd; i++){
@@ -1699,6 +1640,48 @@ void TileVec2PolySet(std::vector<Tile*>& tileVec, Polygon90Set& polySet){
         gtl::set_points(tileRectangle, newAreaVertices.begin(), newAreaVertices.end());
         polySet += tileRectangle;
     }
+}
+
+
+Segment findTangentSegment(Tile* from, Tile* to, int direction){
+    // find tangent segment 
+    Segment tangent;
+    Cord fromStart, fromEnd, toStart, toEnd;
+    if (direction == 0){
+        // to on top of from 
+        fromStart = from->getUpperLeft();
+        fromEnd = from->getUpperRight();
+        toStart = to->getLowerLeft(); 
+        toEnd = to->getLowerRight();
+        tangent.direction = DIRECTION::TOP;
+    }
+    else if (direction == 1){
+        // to is right of from 
+        fromStart = from->getLowerRight();
+        fromEnd = from->getUpperRight();
+        toStart = to->getLowerLeft(); 
+        toEnd = to->getUpperLeft();
+        tangent.direction = DIRECTION::RIGHT;
+    }
+    else if (direction == 2){
+        // to is bottom of from 
+        fromStart = from->getLowerLeft();
+        fromEnd = from->getLowerRight();
+        toStart = to->getUpperLeft(); 
+        toEnd = to->getUpperRight();
+        tangent.direction = DIRECTION::DOWN;
+    }
+    else {
+        // to is left of from 
+        fromStart = from->getLowerLeft();
+        fromEnd = from->getUpperLeft();
+        toStart = to->getLowerRight(); 
+        toEnd = to->getUpperRight();
+        tangent.direction = DIRECTION::LEFT;
+    }
+    tangent.segStart = fromStart <= toStart ? toStart : fromStart;
+    tangent.segEnd = fromEnd <= toEnd ? fromEnd : toEnd;
+    return tangent;
 }
 
 // find the segment, such that when an area is extended in the normal direction of seg will 
