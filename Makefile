@@ -18,8 +18,8 @@ DEBUGFLAGS = -g
  
 # If there are new source files, add them here
 LEGAL_SRC := \
-	DFSLConfig.cpp DFSLegalizer.cpp LFLegaliser.cpp LFUnits.cpp \
-	Tessera.cpp Tile.cpp 
+	DFSLConfig.cpp DFSLegalizer.cpp DFSLNode.cpp \
+	DFSLEdge.cpp Segment.cpp
 
 FP_SRC := \
 	cSException.cpp globalResult.cpp \
