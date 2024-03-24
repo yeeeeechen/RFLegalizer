@@ -2,6 +2,7 @@
 #define _DFSLSEGMENT_H_
 
 #include "fp/cord.h"
+#include "DFSLUnits.h"
 
 namespace DFSL {
 
@@ -19,6 +20,10 @@ struct Segment {
 
 bool compareXSegment(Segment a, Segment b);
 bool compareYSegment(Segment a, Segment b);
+
+// in the direction of seg.direction,
+// find the segment in poly of the same orientation that has the shortest distance
+Segment FindNearestOverlappingInterval(Segment& seg, Polygon90Set& poly);
 
 }
 

@@ -1,0 +1,13 @@
+#ifndef _DFSLUNITS_H_
+#define _DFSLUNITS_H_
+
+#include "fp/units.h"
+#include <boost/polygon/polygon.hpp>
+
+namespace gtl = boost::polygon;
+typedef gtl::rectangle_data<len_t> Rectangle;
+typedef gtl::polygon_90_set_data<len_t> Polygon90Set;
+typedef gtl::polygon_90_with_holes_data<len_t> Polygon90WithHoles;
+typedef gtl::point_data<len_t> Point;
+
+#endif

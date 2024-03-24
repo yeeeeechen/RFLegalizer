@@ -13,8 +13,15 @@ namespace DFSL {
 
 enum class DFSLNodeType : unsigned char { OVERLAP, FIXED, SOFT, BLANK };
 
-class DFSLNode;
 union tileListUnion;
+class DFSLNode;
+
+union tileListUnion
+{
+    std::unordered_set<Tile *>* blockSet;
+    std::set<Tile *>* overlapTiles;
+    Tile* blankTile;
+};
 
 class DFSLNode {
 private:
@@ -39,14 +46,6 @@ public:
     // void removeTile(Tile* deleteTile);
     void initOverlapNode(int overlapIndex1, int overlapIndex2);
     void initBlockNode(Rectilinear* recti);
-};
-
-
-union tileListUnion
-{
-    std::unordered_set<Tile *>* blockSet;
-    std::set<Tile *>* overlapTiles;
-    Tile* blankTile;
 };
 
 }

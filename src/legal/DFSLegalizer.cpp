@@ -13,8 +13,6 @@
 
 namespace DFSL {
 
-DFSLNode::DFSLNode(): area(0), index(0) {}
-
 DFSLegalizer::DFSLegalizer()
 {
     config.initAllConfigs();
@@ -370,7 +368,7 @@ void DFSLegalizer::getSoftNeighbors(int fromId){
                     // neighbor does not exists in allTangentSegments yet
                     // insert at key neighborIndex a vector with size 1 that has spliced segment
                     else {
-                        allTangentSegments.emplace(neighborIndex, 1, splicedSegment);
+                        allTangentSegments.emplace(neighborIndex, std::vector<DFSL::Segment>(1, splicedSegment));
                     }
 
                     segBegin = currentSegment[j].segStart;
@@ -385,7 +383,7 @@ void DFSLegalizer::getSoftNeighbors(int fromId){
                 neighborTangents.emplace_back(splicedSegment);
             }
             else {
-                allTangentSegments.emplace(neighborIndex, 1, splicedSegment);
+                allTangentSegments.emplace(neighborIndex, std::vector<DFSL::Segment>(1, splicedSegment));
             }
         }
     }
@@ -418,6 +416,7 @@ void DFSLegalizer::printFloorplanStats(){
     DFSLPrint(2, "Total Overlap Area: %6ld\t(o/d = %5.4f%\to/p = %5.4f%)\n", overlapArea, overlapOverDie * 100, overlapOverPhysical * 100);
 }
 
+/*
 // mode 0: resolve area big -> area small
 // mode 1: resolve area small -> area big
 // mode 2: resolve overlaps near center -> outer edge
@@ -477,30 +476,30 @@ RESULT DFSLegalizer::legalize(int mode){
                     break;
                 
                 case 2:{
-                    int chipCenterx = mFP->getCanvasWidth() / 2;
-                    int chipCentery = mFP->getCanvasHeight() / 2;
+                    Cord chipCenter;
+                    gtl::center(chipCenter, mFP->getChipContour());
                     
                     int min_x, max_x, min_y, max_y;
                     min_x = min_y = INT_MAX;
                     max_x = max_y = -INT_MAX;
 
-                    for (Tile* tile: currentOverlap.tileList){
-                        if (tile->getLowerLeft().x < min_x){
-                            min_x = tile->getLowerLeft().x;
+                    for (Tile* tile: currentOverlap.getOverlapTileList()){
+                        if (tile->getLowerLeft().x() < min_x){
+                            min_x = tile->getLowerLeft().x();
                         }            
-                        if (tile->getLowerLeft().y < min_y){
-                            min_y = tile->getLowerLeft().y;
+                        if (tile->getLowerLeft().y() < min_y){
+                            min_y = tile->getLowerLeft().y();
                         }            
-                        if (tile->getUpperRight().x > max_x){
-                            max_x = tile->getUpperRight().x;
+                        if (tile->getUpperRight().x() > max_x){
+                            max_x = tile->getUpperRight().x();
                         }            
-                        if (tile->getUpperRight().y > max_y){
-                            max_y = tile->getUpperRight().y;
+                        if (tile->getUpperRight().y() > max_y){
+                            max_y = tile->getUpperRight().y();
                         }
                     }
                     int overlapCenterx = (min_x + max_x) / 2;
                     int overlapCentery = (min_y + max_y) / 2;
-                    int distSquared = pow(overlapCenterx - chipCenterx, 2) + pow(overlapCentery - chipCentery, 2);
+                    int distSquared = pow(overlapCenterx - chipCenter.x(), 2) + pow(overlapCentery - chipCenter.y(), 2);
 
                     if (distSquared < bestMetric && solveable[i]){
                         bestMetric = distSquared;
@@ -538,7 +537,8 @@ RESULT DFSLegalizer::legalize(int mode){
             
         }
 
-        constructGraph();
+        // reworkt this oml
+        updateGraph();
         iteration++;
         
         // clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
@@ -622,6 +622,7 @@ RESULT DFSLegalizer::legalize(int mode){
     return result;
 }
 
+/*
 // find actual rectangle, equal to resolvable area
 Rectangle DFSLegalizer::getRectFromEdge(MigrationEdge& edge, bool findRemainder, Rectangle& remainderRect, bool useCeil = true){
     int xl = 0, xh = 0, yl = 0, yh = 0;
@@ -1292,26 +1293,6 @@ void DFSLegalizer::removeIndexFromOverlap(int indexToRemove, Tile* overlapTile){
     }
 }
 
-bool removeFromVector(int a, std::vector<int>& vec){
-    for (std::vector<int>::iterator it = vec.begin() ; it != vec.end(); ++it){
-        if (*it == a){
-            vec.erase(it);
-            return true;
-        }
-    }
-    return false;
-}
-
-bool removeFromVector(Tile* a, std::vector<Tile*>& vec){
-    for (std::vector<Tile*>::iterator it = vec.begin() ; it != vec.end(); ++it){
-        if (*it == a){
-            vec.erase(it);
-            return true;
-        }
-    }
-    return false;
-}
-
 void DFSLegalizer::dfs(DFSLEdge& edge, double currentCost){
     int toIndex = edge.toIndex;
     MigrationEdge edgeResult = getEdgeCost(edge);
@@ -1627,22 +1608,15 @@ MigrationEdge DFSLegalizer::getEdgeCost(DFSLEdge& edge){
     // note: returnTile & bestSegment are not initialized if OB edge
     return MigrationEdge(edge.fromIndex, edge.toIndex, returnRectangle, bestSegment, edgeCost);
 }
+*/
 
 void TileVec2PolySet(std::vector<Tile*>& tileVec, Polygon90Set& polySet){
     for (Tile* tile: tileVec){
-        Polygon90WithHoles tileRectangle;
-        std::vector<Point> newAreaVertices = {
-            {tile->getLowerLeft().x, tile->getLowerLeft().y}, 
-            {tile->getLowerRight().x, tile->getLowerRight().y }, 
-            {tile->getUpperRight().x, tile->getUpperRight().y}, 
-            {tile->getUpperLeft().x, tile->getUpperLeft().y}
-        };
-        gtl::set_points(tileRectangle, newAreaVertices.begin(), newAreaVertices.end());
-        polySet += tileRectangle;
+        polySet += tile->getRectangle();
     }
 }
 
-
+// given two tiles, find their tangent segment
 Segment findTangentSegment(Tile* from, Tile* to, int direction){
     // find tangent segment 
     Segment tangent;
@@ -1684,303 +1658,12 @@ Segment findTangentSegment(Tile* from, Tile* to, int direction){
     return tangent;
 }
 
-// find the segment, such that when an area is extended in the normal direction of seg will 
-// collide with this segment.
-Segment FindNearestOverlappingInterval(Segment& seg, Polygon90Set& poly){
-    int segmentOrientation; // 0 = segments are X direction, 1 = Y direction
-    Segment closestSegment = seg;
-    int closestDistance = INT_MAX;
-    if (seg.direction == DIRECTION::DOWN || seg.direction == DIRECTION::TOP){
-        segmentOrientation = 0;
-    }
-    else if (seg.direction == DIRECTION::RIGHT || seg.direction == DIRECTION::LEFT){
-        segmentOrientation = 1;
-    }
-    else {
-        return seg;
-    }
-
-    std::vector<Polygon90WithHoles> polyContainer;
-    // int currentDepth, currentStart, currentEnd;
-    poly.get_polygons(polyContainer);
-    for (Polygon90WithHoles poly: polyContainer) {
-        Point firstPoint, prevPoint, currentPoint(0,0);
-        int counter = 0;
-        for (auto it = poly.begin(); it != poly.end(); it++){
-            prevPoint = currentPoint;
-            currentPoint = *it;
-
-            if (counter++ == 0){
-                firstPoint = currentPoint;
-                continue; 
-            }
-            Segment currentSegment;
-            currentSegment.segStart = prevPoint < currentPoint ? Cord(prevPoint.x(), prevPoint.y()) : Cord(currentPoint.x(), currentPoint.y());
-            currentSegment.segEnd = prevPoint < currentPoint ? Cord(currentPoint.x(), currentPoint.y()) : Cord(prevPoint.x(), prevPoint.y());
-            int currentOrientation = prevPoint.y() == currentPoint.y() ? 0 : 1;
-
-            if (segmentOrientation == currentOrientation){
-                switch (seg.direction)
-                {
-                case DIRECTION::TOP:
-                {
-                    // test if y coord is larger
-                    bool overlaps = ((currentSegment.segStart.x < seg.segEnd.x) && (seg.segStart.x < currentSegment.segEnd.x));
-                    bool isAbove = currentSegment.segStart.y > seg.segStart.y;
-                    if (overlaps && isAbove){
-                        int distance = currentSegment.segStart.y - seg.segStart.y;
-                        if (distance < closestDistance){
-                            closestDistance = distance;
-                            closestSegment = currentSegment;
-                        }
-                    }
-                    break;
-                }
-                case DIRECTION::RIGHT:
-                {
-                    // test if x coord is larger
-                    bool overlaps = ((currentSegment.segStart.y < seg.segEnd.y) && (seg.segStart.y < currentSegment.segEnd.y));
-                    bool isRight = currentSegment.segStart.x > seg.segStart.x;
-                    if (overlaps && isRight){
-                        int distance = currentSegment.segStart.x - seg.segStart.x;
-                        if (distance < closestDistance){
-                            closestDistance = distance;
-                            closestSegment = currentSegment;
-                        }
-                    }
-                    break;
-                }
-                case DIRECTION::DOWN:
-                {
-                    // test if y coord is smaller
-                    bool overlaps = ((currentSegment.segStart.x < seg.segEnd.x) && (seg.segStart.x < currentSegment.segEnd.x));
-                    bool isBelow = currentSegment.segStart.y < seg.segStart.y;
-                    if (overlaps && isBelow){
-                        int distance = seg.segStart.y -currentSegment.segStart.y;
-                        if (distance < closestDistance){
-                            closestDistance = distance;
-                            closestSegment = currentSegment;
-                        }
-                    }
-                    break;
-                }
-                case DIRECTION::LEFT:
-                {
-                    // test if x coord is smaller
-                    bool overlaps = ((currentSegment.segStart.y < seg.segEnd.y) && (seg.segStart.y < currentSegment.segEnd.y));
-                    bool isLeft = currentSegment.segStart.x < seg.segStart.x;
-                    if (overlaps && isLeft){
-                        int distance = seg.segStart.x - currentSegment.segStart.x;
-                        if (distance < closestDistance){
-                            closestDistance = distance;
-                            closestSegment = currentSegment;
-                        }
-                    }
-                    break;
-                }
-                default:
-                    break;
-                }
-            }
-            else {
-                continue;
-            }
-            
-        }
-        //compare to first point again
-        Segment lastSegment;
-        lastSegment.segStart = currentPoint < firstPoint ? Cord(currentPoint.x(), currentPoint.y()) : Cord(firstPoint.x(), firstPoint.y());
-        lastSegment.segEnd = currentPoint < firstPoint ? Cord(firstPoint.x(), firstPoint.y()) : Cord(currentPoint.x(), currentPoint.y());
-        int lastOrientation = currentPoint.y() == firstPoint.y() ? 0 : 1;  
-                 
-        if (segmentOrientation == lastOrientation){
-            switch (seg.direction)
-            {
-            case DIRECTION::TOP:
-            {
-                // test if y coord is larger
-                bool overlaps = ((lastSegment.segStart.x < seg.segEnd.x) && (seg.segStart.x < lastSegment.segEnd.x));
-                bool isAbove = lastSegment.segStart.y > seg.segStart.y;
-                if (overlaps && isAbove){
-                    int distance = lastSegment.segStart.y - seg.segStart.y;
-                    if (distance < closestDistance){
-                        closestDistance = distance;
-                        closestSegment = lastSegment;
-                    }
-                }
-                break;
-            }
-            case DIRECTION::RIGHT:
-            {
-                // test if x coord is larger
-                bool overlaps = ((lastSegment.segStart.y < seg.segEnd.y) && (seg.segStart.y < lastSegment.segEnd.y));
-                bool isRight = lastSegment.segStart.x > seg.segStart.x;
-                if (overlaps && isRight){
-                    int distance = lastSegment.segStart.x - seg.segStart.x;
-                    if (distance < closestDistance){
-                        closestDistance = distance;
-                        closestSegment = lastSegment;
-                    }
-                }
-                break;
-            }
-            case DIRECTION::DOWN:
-            {
-                // test if y coord is smaller
-                bool overlaps = ((lastSegment.segStart.x < seg.segEnd.x) && (seg.segStart.x < lastSegment.segEnd.x));
-                bool isBelow = lastSegment.segStart.y < seg.segStart.y;
-                if (overlaps && isBelow){
-                    int distance = seg.segStart.y -lastSegment.segStart.y;
-                    if (distance < closestDistance){
-                        closestDistance = distance;
-                        closestSegment = lastSegment;
-                    }
-                }
-                break;
-            }
-            case DIRECTION::LEFT:
-            {
-                // test if x coord is smaller
-                bool overlaps = ((lastSegment.segStart.y < seg.segEnd.y) && (seg.segStart.y < lastSegment.segEnd.y));
-                bool isLeft = lastSegment.segStart.x < seg.segStart.x;
-                if (overlaps && isLeft){
-                    int distance = seg.segStart.x - lastSegment.segStart.x;
-                    if (distance < closestDistance){
-                        closestDistance = distance;
-                        closestSegment = lastSegment;
-                    }
-                }
-                break;
-            }
-            default:
-                break;
-            }
-        }
-    }   
-
-    return closestSegment;
-}
-
-LegalInfo getLegalInfo(std::vector<Tile*>& tiles){
-    LegalInfo legal;
-    int min_x, max_x, min_y, max_y;
-    min_x = min_y = INT_MAX;
-    max_x = max_y = -INT_MAX;
-    legal.actualArea = 0;
-    for (Tile* tile: tiles){
-        if (tile->getLowerLeft().x < min_x){
-            min_x = tile->getLowerLeft().x;
-        }            
-        if (tile->getLowerLeft().y < min_y){
-            min_y = tile->getLowerLeft().y;
-        }            
-        if (tile->getUpperRight().x > max_x){
-            max_x = tile->getUpperRight().x;
-        }            
-        if (tile->getUpperRight().y > max_y){
-            max_y = tile->getUpperRight().y;
-        }
-        legal.actualArea += tile->getArea();   
-    }
-    legal.width = max_x - min_x;
-    legal.height = max_y - min_y;
-
-    legal.bbArea = legal.width * legal.height; 
-    legal.BL = Cord(min_x, min_y);  
-    if (legal.width == 0 || legal.height == 0){
-        legal.aspectRatio = INT_MAX;
-    }
-    else {
-        legal.aspectRatio = ((double) legal.width) / ((double) legal.height);
-    }
-    if (legal.actualArea == 0 || legal.bbArea == 0){
-        legal.util = 0;
-    }
-    else {
-        legal.util = ((double) legal.actualArea) / ((double) legal.bbArea);
-    }
-
-    return legal;
-} 
-
-LegalInfo getLegalInfo(std::set<Tile*>& tiles){
-    LegalInfo legal;
-    int min_x, max_x, min_y, max_y;
-    min_x = min_y = INT_MAX;
-    max_x = max_y = -INT_MAX;
-    legal.actualArea = 0;
-    for (Tile* tile: tiles){
-        if (tile->getLowerLeft().x < min_x){
-            min_x = tile->getLowerLeft().x;
-        }            
-        if (tile->getLowerLeft().y < min_y){
-            min_y = tile->getLowerLeft().y;
-        }            
-        if (tile->getUpperRight().x > max_x){
-            max_x = tile->getUpperRight().x;
-        }            
-        if (tile->getUpperRight().y > max_y){
-            max_y = tile->getUpperRight().y;
-        }
-        legal.actualArea += tile->getArea();   
-    }
-    legal.width = max_x - min_x;
-    legal.height = max_y - min_y;
-
-    legal.bbArea = legal.width * legal.height; 
-    legal.BL = Cord(min_x, min_y);  
-    if (legal.width == 0 || legal.height == 0){
-        legal.aspectRatio = INT_MAX;
-    }
-    else {
-        legal.aspectRatio = ((double) legal.width) / ((double) legal.height);
-    }
-    if (legal.actualArea == 0 || legal.bbArea == 0){
-        legal.util = 0;
-    }
-    else {
-        legal.util = ((double) legal.actualArea) / ((double) legal.bbArea);
-    }
-
-    return legal;
-} 
-
 // 0 : Errors
 // 1 : Warnings
 // 2 : Standard info
 // 3 : Verbose info
-void DFSLegalizer::setOutputLevel(DFSL_PRINTLEVEL level){
-    config.setConfigValue<int>("OutputLevel",(int)level);
-}
-
-LegalInfo getLegalInfo(Polygon90Set& tiles){
-    LegalInfo legal;
-    Rectangle bbox;
-    tiles.extents(bbox);
-
-    legal.actualArea = gtl::area(tiles);
-    legal.width = gtl::delta(bbox, gtl::orientation_2d_enum::HORIZONTAL);
-    legal.height = gtl::delta(bbox, gtl::orientation_2d_enum::VERTICAL);
-    legal.bbArea = legal.width * legal.height;
-    legal.BL = Cord(gtl::xl(bbox), gtl::yl(bbox));
-    if (legal.width == 0 || legal.height == 0){
-        legal.aspectRatio = INT_MAX;
-    }
-    else {
-        legal.aspectRatio = ((double) legal.width) / ((double) legal.height);
-    }
-    if (legal.actualArea == 0 || legal.bbArea == 0){
-        legal.util = 0;
-    }
-    else {
-        legal.util = ((double) legal.actualArea) / ((double) legal.bbArea);
-    }
-
-    return legal;
-} 
-
-Rectangle tile2Rectangle(Tile* tile){
-    return Rectangle(tile->getLowerLeft().x, tile->getLowerLeft().y, tile->getUpperRight().x, tile->getUpperRight().y);
+void DFSLegalizer::setOutputLevel(int level){
+    config.setConfigValue<int>("OutputLevel",level);
 }
 
 MigrationEdge::MigrationEdge(int from, int to, Rectangle& area, Segment& seg, double cost):

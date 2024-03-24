@@ -124,17 +124,18 @@ int main(int argc, char *argv[]) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 
     // get global result
+    std::cout << "Reading Global Input..." << std::endl;
     GlobalResult gr;
     gr.readGlobalResult(inputFilePath);
 
     // convert global to FP
+    std::cout << "Creating Floorplan..." << std::endl;
     Floorplan fp(gr, 1.0 / ASPECT_RATIO_RULE, ASPECT_RATIO_RULE, UTIL_RULE);
-    
 
-    std::cout << std::endl << std::endl;
+    // initialize
+    std::cout << "Initializing Legalizer..." << std::endl;
     DFSL::DFSLegalizer dfsl;
-
-    // dfsl.initDFSLegalizer(legaliser);
+    dfsl.initDFSLegalizer(&(fp));
 
     // SETTING configs:
     dfsl.config.setConfigValue<bool>("ExactAreaMigration", true);
@@ -173,11 +174,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // set verbose
-    if (verbose){
-        dfsl.setOutputLevel(DFSLC::DFSL_VERBOSE);
-    }
-
     std::cout << "Legalization mode = " << legalMode << ",";
     switch (legalMode)
     {
@@ -198,6 +194,7 @@ int main(int argc, char *argv[]) {
     }
 
     // start legalizing
+    // DFSL::RESULT legalResult = dfsl.legalize(legalMode);
 
     // Stop measuring CPU time
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
